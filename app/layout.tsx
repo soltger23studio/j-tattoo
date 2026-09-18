@@ -1,4 +1,5 @@
 import { Analytics } from '@vercel/analytics/next';
+import { SpeedInsights } from '@vercel/speed-insights/next';
 import type { Metadata } from 'next';
 import { Inter } from 'next/font/google';
 import './globals.css';
@@ -37,10 +38,13 @@ export default function RootLayout({
     <html lang="hu" className={inter.variable}>
       <body>
         {children}
-        {/* Vercel Web Analytics. Csak a Vercelre kirakott oldalon küld
-            adatot – helyi futtatáskor és más hostingon nem csinál semmit.
-            A Vercel projektben külön be kell kapcsolni: Analytics fül. */}
+        {/* Vercel Web Analytics (hányan járnak az oldalon) és Speed Insights
+            (milyen gyors a valódi látogatóknak). Mindkettő csak a Vercelre
+            kirakott oldalon küld adatot – helyi futtatáskor és más hostingon
+            nem csinál semmit. A Vercel projektben külön-külön be kell
+            kapcsolni őket: Analytics, illetve Speed Insights fül. */}
         <Analytics />
+        <SpeedInsights />
       </body>
     </html>
   );
