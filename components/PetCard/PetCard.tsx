@@ -149,11 +149,14 @@ export default function PetCard({
       )}
 
       {pet.bonuses && pet.bonuses.length > 0 && (
-        <ul className={styles.bonuses}>
-          {pet.bonuses.map((bonus) => (
-            <li key={bonus}>{bonus}</li>
-          ))}
-        </ul>
+        <div className={styles.bonusBlock}>
+          <span className={styles.bonusLabel}>Bónuszok</span>
+          <ul className={styles.bonuses}>
+            {pet.bonuses.map((bonus) => (
+              <li key={bonus}>{bonus}</li>
+            ))}
+          </ul>
+        </div>
       )}
 
       {pet.notes && <p className={styles.notes}>{pet.notes}</p>}

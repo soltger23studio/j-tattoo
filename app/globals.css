@@ -15,7 +15,9 @@
 
   --color-owned: #6fbf5b;
   --color-owned-soft: rgba(111, 191, 91, 0.12);
-  --color-danger: #d9604a;
+  /* 5.18:1 a hiányzó-jelzés hátterén; a korábbi #d9604a 4.46 volt,
+   * épphogy a WCAG AA 4.5-ös küszöbe alatt. */
+  --color-danger: #e0705c;
 
   --rarity-common: #9aa0a6;
   --rarity-rare: #5a9fe0;
@@ -38,6 +40,7 @@
   --source-donate: #e07ab0;
   --source-unknown: #7a6f5e;
 
+  --spacing-2xs: 0.25rem;
   --spacing-xs: 0.5rem;
   --spacing-sm: 1rem;
   --spacing-md: 1.5rem;
@@ -45,6 +48,16 @@
   --spacing-xl: 5rem;
 
   --font-sans: var(--font-inter), system-ui, -apple-system, 'Segoe UI', sans-serif;
+
+  /* Tipográfiai skála. Korábban 15 különböző méret élt a modulokban, köztük
+   * olyan párok, mint 0.85 és 0.86 – a különbséget nem látni, a rendetlenséget
+   * viszont igen. Minden szöveg ebből a hat fokból válasszon. */
+  --text-xs: 0.72rem;    /* címkék, mikro-feliratok */
+  --text-sm: 0.8rem;     /* másodlagos szöveg, linkek */
+  --text-base: 0.875rem; /* kártya-törzsszöveg */
+  --text-md: 0.95rem;    /* kiemelt sor, kisebb panel-cím */
+  --text-lg: 1.1rem;     /* panel-cím, pet neve */
+  --text-xl: 1.6rem;     /* a nagy szám a haladás-panelen */
 
   --radius-sm: 0.375rem;
   --radius-md: 0.75rem;
