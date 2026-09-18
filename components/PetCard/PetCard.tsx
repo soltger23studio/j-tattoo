@@ -29,6 +29,15 @@ export default function PetCard({
 }: PetCardProps) {
   const checkboxId = `pet-${pet.id}`;
 
+  // A "Hol:" mind a 70 petnél ugyanazt ismételte, ami a lépésben már ott van
+  // ("Megvásárolható Theowahdan NPC-nél" -> "Hol: Theowahdan"). Csak akkor
+  // írjuk ki, ha tényleg új információ – pl. egy kézi kiegészítésnél.
+  const stepText = (pet.acquisition ?? []).map((step) => step.text).join(' ');
+  const showLocation = Boolean(
+    pet.location && !stepText.includes(pet.location) &&
+      !(pet.howToGet ?? '').includes(pet.location),
+  );
+
   return (
     <article
       className={`${styles.card} ${owned ? styles.owned : ''}`}
@@ -133,7 +142,7 @@ export default function PetCard({
         </p>
       )}
 
-      {pet.location && (
+      {showLocation && (
         <p className={styles.detail}>
           <strong>Hol:</strong> {pet.location}
         </p>

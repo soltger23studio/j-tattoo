@@ -1,5 +1,10 @@
+/* A rács a li-ket a sor legmagasabb eleméhez nyújtja, de a kártya eddig csak
+ * a saját tartalmáig ért – ettől maradtak hézagok a rövidebb kártyák alatt.
+ * A height: 100% kitölteti a cellát, a .wikiLink pedig a kártya aljára ül,
+ * így a sorok alja egy vonalban van. */
 .card {
   position: relative;
+  height: 100%;
   display: flex;
   flex-direction: column;
   gap: var(--spacing-xs);
@@ -243,7 +248,13 @@
   color: var(--color-text-muted);
 }
 
+/* Az egyforma magasság miatt a rövid kártyákon üres hely marad a link fölött.
+ * A vékony elválasztó lábléccé teszi a linket, így a hely szándékosnak
+ * hat, nem hiányzó tartalomnak. */
 .wikiLink {
+  margin-top: auto;
+  padding-top: var(--spacing-xs);
+  border-top: 1px solid var(--color-border);
   font-size: 0.8rem;
   font-weight: 600;
 }
