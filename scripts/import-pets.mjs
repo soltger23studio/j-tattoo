@@ -198,6 +198,15 @@ const IMAGE_KEYS = ['image', 'img', 'icon', 'iconurl', 'icon_url', 'image_url', 
 const DESC_KEYS = ['description', 'desc', 'info', 'tooltip', 'text', 'leiras', 'leírás'];
 const LINK_KEYS = ['wikiurl', 'wiki_url', 'url', 'link', 'href'];
 const BONUS_KEYS = ['bonuses', 'bonus', 'applies', 'affects', 'bonuszok'];
+const SOURCE_KEYS = ['sources', 'source', 'forrasok'];
+const HOWTO_KEYS = ['howtoget', 'how_to_get', 'howto', 'megszerzes'];
+const PLACE_KEYS = ['location', 'place', 'hely', 'map'];
+
+/** A lib/types.ts PetSource értékei – ismeretlen címkét nem írunk ki. */
+const VALID_SOURCES = [
+  'event', 'shop', 'drop', 'boss', 'dungeon',
+  'quest', 'craft', 'trade', 'donate', 'other',
+];
 
 function pick(obj, keys) {
   for (const key of Object.keys(obj)) {
@@ -213,10 +222,10 @@ function pick(obj, keys) {
 const looksLikeItem = (value) =>
   value && typeof value === 'object' && !Array.isArray(value) && pick(value, NAME_KEYS);
 
-/** Bónusz-lista: csak a nem üres szövegeket tartjuk meg, sorrendben. */
-function pickBonuses(obj) {
+/** Szöveges tömb egy objektumból: csak a nem üres elemeket tartjuk meg. */
+function pickList(obj, keys) {
   for (const key of Object.keys(obj)) {
-    if (!BONUS_KEYS.includes(key.toLowerCase())) continue;
+    if (!keys.includes(key.toLowerCase())) continue;
     const value = obj[key];
     if (!Array.isArray(value)) continue;
     return value
@@ -224,6 +233,11 @@ function pickBonuses(obj) {
       .filter(Boolean);
   }
   return [];
+}
+
+/** Megszerzési címkék, az ismeretlen értékeket eldobva. */
+function pickSources(obj) {
+  return pickList(obj, SOURCE_KEYS).filter((source) => VALID_SOURCES.includes(source));
 }
 
 /** Megkeresi a JSON-ban a legnagyobb olyan tömböt, ami item-szerű objektumokból áll. */
@@ -247,7 +261,10 @@ function normalizeJsonItem(raw, baseUrl) {
     image: absoluteUrl(pick(raw, IMAGE_KEYS), baseUrl),
     description: stripTags(pick(raw, DESC_KEYS) ?? ''),
     wikiUrl: absoluteUrl(pick(raw, LINK_KEYS), baseUrl),
-    bonuses: pickBonuses(raw),
+    bonuses: pickList(raw, BONUS_KEYS),
+    sources: pickSources(raw),
+    howToGet: stripTags(pick(raw, HOWTO_KEYS) ?? ''),
+    location: stripTags(pick(raw, PLACE_KEYS) ?? ''),
   };
 }
 
@@ -388,7 +405,7 @@ const EXT_BY_TYPE = {
 };
 
 /** A wiki kapcsolata időnként megszakad, ezért néhányszor újrapróbáljuk. */
-async function fetchImage(url, attempts = 5) {
+async function fetchImage(url, attempts = 8) {
   let lastError;
   for (let attempt = 1; attempt <= attempts; attempt += 1) {
     try {
@@ -427,7 +444,10 @@ function renderPet(pet) {
     `    name: ${quote(pet.name)},`,
     `    category: ${quote(pet.category)},`,
     `    rarity: ${quote(pet.rarity)},`,
+    `    sources: [${pet.sources.map(quote).join(', ')}],`,
   ];
+  if (pet.howToGet) lines.push(`    howToGet: ${quote(pet.howToGet)},`);
+  if (pet.location) lines.push(`    location: ${quote(pet.location)},`);
   if (pet.bonuses.length > 0) {
     lines.push(`    bonuses: [${pet.bonuses.map(quote).join(', ')}],`);
   }
@@ -515,6 +535,9 @@ async function main() {
       name: item.name,
       category: opts.category,
       rarity: opts.rarity,
+      sources: item.sources ?? [],
+      howToGet: item.howToGet || null,
+      location: item.location || null,
       bonuses: item.bonuses ?? [],
       image: null,
       remoteImage: item.image,

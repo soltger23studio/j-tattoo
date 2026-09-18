@@ -17,18 +17,26 @@
  * Kapcsolók:
  *   --out wiki-pets.json   hova írja a JSON-t
  *   --locale hu            melyik nyelven kérje a neveket (alap: hu)
+ *   --no-sources           kihagyja a megszerzési adatokat (sokkal gyorsabb)
  *
- * Honnan jön a három adat:
- *   - nevek + bónuszok:  /api/items         (type=ITEM_COSTUME, sub_type=COSTUME_PET)
- *   - ikonok:            /api/icon-manifest (vnum -> fájlnév)
- *   - bónusz-feliratok:  a wiki JS bundle-jéből (ld. lentebb)
+ * ------------------------------------------------------------
+ *  Honnan jön melyik adat
+ * ------------------------------------------------------------
+ *
+ *   nevek + bónuszok    /api/items          type=ITEM_COSTUME, sub_type=COSTUME_PET
+ *   ikonok              /api/icon-manifest  vnum -> fájlnév
+ *   bónusz-feliratok    a wiki JS bundle-je (ld. loadApplyLabels)
+ *
+ *   megszerzés – három független forrásból, mert egyik sem fedi le mindet:
+ *     bolt       /api/shops              minden NPC-bolt kínálata egyben
+ *     drop       /api/drops/sources/...  petenként: melyik mobból/ládából esik
+ *     event/kaz. /api/events, /api/dungeons  a cikkek [[item:VNUM]] hivatkozásai
  *
  * A bónuszok a játék nyers `apply_type0..3` / `apply_value0..3` mezőiben
- * vannak, pl. APPLY_ATTBONUS_MONSTER = 1. Az ember által olvasható magyar
- * felirat ("Szörnyek elleni erő +%d%%") a wiki JS-ében él, ezért onnan
- * szedjük ki. Ha a wiki újraépül és ez nem sikerül, a szkript figyelmeztet
- * és a nyers nevet írja ki – ilyenkor a lib/pets.ts marad a régi, amíg
- * nem futtatod újra.
+ * vannak, pl. APPLY_ATTBONUS_MONSTER = 1. Az olvasható magyar felirat
+ * ("Szörnyek elleni erő +%d%%") a wiki JS-ében él, ezért onnan szedjük ki.
+ * Ha a wiki újraépül és ez nem sikerül, a szkript figyelmeztet és a nyers
+ * nevet írja ki – ilyenkor a lib/pets.ts marad a régi, amíg nem futtatod újra.
  */
 
 import { writeFile } from 'node:fs/promises';
@@ -43,6 +51,9 @@ const USER_AGENT =
   'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 ' +
   '(KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36';
 
+/** Egyszerre ennyi kérés fut a petenkénti drop-lekérdezéseknél. */
+const CONCURRENCY = 3;
+
 function fail(message) {
   console.error(`\nHIBA: ${message}\n`);
   process.exit(1);
@@ -51,11 +62,12 @@ function fail(message) {
 // ---------------------------------------------------------------- argumentumok
 
 function parseArgs(argv) {
-  const opts = { out: path.join(ROOT, 'wiki-pets.json'), locale: 'hu' };
+  const opts = { out: path.join(ROOT, 'wiki-pets.json'), locale: 'hu', sources: true };
   for (let i = 0; i < argv.length; i += 1) {
     const arg = argv[i];
     if (arg === '--out') opts.out = path.resolve(process.cwd(), argv[++i]);
     else if (arg === '--locale') opts.locale = argv[++i];
+    else if (arg === '--no-sources') opts.sources = false;
     else fail(`Ismeretlen kapcsoló: ${arg}`);
   }
   return opts;
@@ -65,24 +77,41 @@ function parseArgs(argv) {
 
 /**
  * A wiki kapcsolata megbízhatatlan (időnként connection reset), ezért
- * minden kérést újrapróbálunk növekvő várakozással.
+ * minden kérést újrapróbálunk növekvő várakozással. A 404 nem hiba: több
+ * végpont ezzel jelzi, hogy az adott itemhez nincs adat.
  */
-async function fetchWithRetry(url, { attempts = 6, asJson = false } = {}) {
+async function fetchWithRetry(url, { attempts = 8, asJson = false, on404 = null } = {}) {
   let lastError;
   for (let attempt = 1; attempt <= attempts; attempt += 1) {
     try {
       const res = await fetch(url, { headers: { 'user-agent': USER_AGENT } });
+      if (res.status === 404 && on404 !== null) return on404;
       if (!res.ok) throw new Error(`HTTP ${res.status}`);
       return asJson ? await res.json() : await res.text();
     } catch (err) {
       lastError = err;
       if (attempt < attempts) {
-        const wait = 500 * 2 ** (attempt - 1);
-        await new Promise((resolve) => setTimeout(resolve, wait));
+        await new Promise((resolve) => setTimeout(resolve, 400 * 2 ** (attempt - 1)));
       }
     }
   }
   throw new Error(`${url} -> ${lastError.message}`);
+}
+
+const getJson = (url, on404) => fetchWithRetry(url, { asJson: true, on404 });
+
+/** Feladatok futtatása korlátozott párhuzamossággal. */
+async function mapLimited(items, limit, task) {
+  const results = new Array(items.length);
+  let next = 0;
+  const workers = Array.from({ length: Math.min(limit, items.length) }, async () => {
+    while (next < items.length) {
+      const index = next++;
+      results[index] = await task(items[index], index);
+    }
+  });
+  await Promise.all(workers);
+  return results;
 }
 
 // ---------------------------------------------------------------- bónusz-feliratok
@@ -169,6 +198,172 @@ function readBonuses(item, labelTable, unknown) {
   return bonuses;
 }
 
+// ---------------------------------------------------------------- megszerzés
+
+const NUMBER_FORMAT = new Intl.NumberFormat('hu-HU');
+
+/**
+ * Egy bolti ajánlat ára olvasható formában. A yang-árat (price_type 1)
+ * csak akkor írjuk ki, ha nincs mellette tárgy-fizetőeszköz – a boltok
+ * jellemzően mindkettőt kérik, és a tárgy a lényegi információ.
+ */
+function formatPrices(offer, itemNames) {
+  const prices = offer.prices ?? [];
+  const items = prices
+    .filter((price) => price.price_type === 3 && price.price_vnum)
+    .map((price) => {
+      const name = itemNames.get(price.price_vnum) ?? `#${price.price_vnum}`;
+      return `${NUMBER_FORMAT.format(price.amount)} db ${name}`;
+    });
+  if (items.length > 0) return items.join(' + ');
+
+  const gold = prices.find((price) => price.price_type === 1 && price.amount > 0);
+  return gold ? `${NUMBER_FORMAT.format(gold.amount)} yang` : null;
+}
+
+/** vnum -> [{ npc, tab, price }] az összes NPC-bolt kínálatából. */
+function indexShops(shops, petVnums, itemNames) {
+  const index = new Map();
+  for (const shop of shops) {
+    for (const offer of shop.offers ?? []) {
+      const vnum = offer.item_vnum;
+      if (!petVnums.has(vnum)) continue;
+      const entry = { npc: shop.npc_name, tab: shop.name, price: formatPrices(offer, itemNames) };
+      const list = index.get(vnum) ?? [];
+      // Ugyanaz az NPC több fülön is árulhatja – egyszer elég.
+      if (!list.some((other) => other.npc === entry.npc && other.price === entry.price)) {
+        list.push(entry);
+      }
+      index.set(vnum, list);
+    }
+  }
+  return index;
+}
+
+/** vnum -> [{ kind: 'event'|'dungeon', title }] a cikkek hivatkozásaiból. */
+async function indexArticles(petVnums, locale) {
+  const index = new Map();
+  for (const kind of ['events', 'dungeons']) {
+    const list = await getJson(`${WIKI}/api/${kind}?locale=${locale}`);
+    for (const entry of list) {
+      const article = await getJson(
+        `${WIKI}/api/${kind}/${encodeURIComponent(entry.slug)}?locale=${locale}`,
+        null,
+      );
+      const body = article?.body ?? '';
+      const seen = new Set();
+      for (const match of body.matchAll(/\[\[item:(\d+)/g)) {
+        const vnum = Number(match[1]);
+        if (!petVnums.has(vnum) || seen.has(vnum)) continue;
+        seen.add(vnum);
+        const list2 = index.get(vnum) ?? [];
+        list2.push({ kind: kind === 'events' ? 'event' : 'dungeon', title: entry.title });
+        index.set(vnum, list2);
+      }
+    }
+  }
+  return index;
+}
+
+/**
+ * A ládák a drop-táblában belső néven szerepelnek, egybeírva és ékezet
+ * nélkül: "AsmodeusLada", "NagyHFLada", "RothadtFadoboz". Szavakra bontjuk,
+ * hogy olvasható legyen. Az ékezetek nem nyerhetők vissza (a "VillamLada"
+ * ettől "Villam láda" marad, nem "Villám láda").
+ */
+function prettifyChest(raw) {
+  return String(raw)
+    // "HFLada" -> "HF Lada": mozaikszó után induló új szó
+    .replace(/([A-Z]+)([A-Z][a-z])/g, '$1 $2')
+    .replace(/([a-z0-9])([A-Z])/g, '$1 $2')
+    .replace(/\b(Lada|Doboz|Fadoboz|Zsak)\b/g, (word) => word.toLowerCase())
+    .replace(/\blada\b/g, 'láda')
+    .replace(/\bfadoboz\b/g, 'fadoboz')
+    .replace(/\bzsak\b/g, 'zsák')
+    .replace(/\s+/g, ' ')
+    .trim();
+}
+
+/** vnum -> [{ kind: 'boss'|'chest', name }] a drop-forrásokból. */
+async function indexDrops(pets, locale, mobRanks) {
+  const index = new Map();
+  let done = 0;
+  await mapLimited(pets, CONCURRENCY, async (pet) => {
+    const rows = await getJson(
+      `${WIKI}/api/drops/sources/item/${pet.vnum}?locale=${locale}`,
+      [],
+    );
+    done += 1;
+    if (done % 20 === 0) console.log(`  ${done}/${pets.length}`);
+    if (!Array.isArray(rows) || rows.length === 0) return;
+
+    const entries = [];
+    for (const row of rows) {
+      const name = row.source_name;
+      if (!name) continue;
+      if (row.source_type === 'mob') {
+        const rank = mobRanks.get(name);
+        entries.push({ kind: rank === 'BOSS' || rank === 'KING' ? 'boss' : 'mob', name });
+      } else {
+        entries.push({ kind: 'chest', name: prettifyChest(name) });
+      }
+    }
+    if (entries.length > 0) index.set(pet.vnum, entries);
+  });
+  return index;
+}
+
+/**
+ * A három forrásból összerakja a `sources` címkéket, a `howToGet` mondatot és
+ * a `location` mezőt. A `sources` a lib/types.ts PetSource értékeit használja.
+ */
+function buildAcquisition({ shop, drops, articles }) {
+  const sources = new Set();
+  const sentences = [];
+  let location = null;
+
+  for (const entry of drops ?? []) {
+    if (entry.kind === 'boss') {
+      sources.add('boss');
+      sentences.push(`Esik a(z) ${entry.name} nevű bossból.`);
+      location ??= entry.name;
+    } else if (entry.kind === 'mob') {
+      sources.add('drop');
+      sentences.push(`Esik a(z) ${entry.name} nevű szörnyből.`);
+      location ??= entry.name;
+    } else {
+      sources.add('drop');
+      sentences.push(`Kinyerhető ebből a ládából: ${entry.name}.`);
+    }
+  }
+
+  for (const entry of articles ?? []) {
+    sources.add(entry.kind);
+    sentences.push(
+      entry.kind === 'event'
+        ? `Elérhető ez alatt: ${entry.title}.`
+        : `Megszerezhető innen: ${entry.title}.`,
+    );
+    if (entry.kind === 'dungeon') location ??= entry.title;
+  }
+
+  for (const entry of shop ?? []) {
+    sources.add('shop');
+    sentences.push(
+      entry.price
+        ? `Megvásárolható ${entry.npc} NPC-nél: ${entry.price}.`
+        : `Megvásárolható ${entry.npc} NPC-nél.`,
+    );
+    location ??= entry.npc;
+  }
+
+  return {
+    sources: [...sources],
+    howToGet: sentences.length > 0 ? sentences.join(' ') : null,
+    location,
+  };
+}
+
 // ---------------------------------------------------------------- futtatás
 
 async function main() {
@@ -178,12 +373,10 @@ async function main() {
   const labelTable = await loadApplyLabels();
 
   console.log('Itemek letöltése...');
-  const items = await fetchWithRetry(`${WIKI}/api/items?locale=${opts.locale}`, {
-    asJson: true,
-  });
+  const items = await getJson(`${WIKI}/api/items?locale=${opts.locale}`);
 
   console.log('Ikon-lista letöltése...');
-  const manifest = await fetchWithRetry(`${WIKI}/api/icon-manifest`, { asJson: true });
+  const manifest = await getJson(`${WIKI}/api/icon-manifest`);
   const icons = manifest.items ?? {};
 
   const pets = items
@@ -192,28 +385,76 @@ async function main() {
 
   if (pets.length === 0) fail('egyetlen pet kosztümöt sem találtam az API válaszában');
 
+  const petVnums = new Set(pets.map((item) => item.vnum));
+  const itemNames = new Map(
+    items.map((item) => [item.vnum, (item.locale_name || item.name || '').trim()]),
+  );
+
+  let shopIndex = new Map();
+  let articleIndex = new Map();
+  let dropIndex = new Map();
+
+  if (opts.sources) {
+    console.log('NPC-boltok letöltése...');
+    const shops = await getJson(`${WIKI}/api/shops?locale=${opts.locale}`);
+    shopIndex = indexShops(shops, petVnums, itemNames);
+
+    console.log('Event- és kazamata-cikkek átnézése...');
+    articleIndex = await indexArticles(petVnums, opts.locale);
+
+    console.log('Szörnyek letöltése (boss-besoroláshoz)...');
+    const mobs = await getJson(`${WIKI}/api/mobs?locale=${opts.locale}`);
+    const mobRanks = new Map();
+    for (const mob of mobs) {
+      for (const key of ['locale_name', 'name']) {
+        if (mob[key]) mobRanks.set(mob[key], mob.rank);
+      }
+    }
+
+    console.log(`Drop-források lekérdezése (${pets.length} pet)...`);
+    dropIndex = await indexDrops(pets, opts.locale, mobRanks);
+  }
+
   const unknown = new Set();
   let withoutIcon = 0;
 
   const rows = pets.map((item) => {
     const icon = icons[String(item.vnum)];
     if (!icon) withoutIcon += 1;
+
+    const acquisition = buildAcquisition({
+      shop: shopIndex.get(item.vnum),
+      drops: dropIndex.get(item.vnum),
+      articles: articleIndex.get(item.vnum),
+    });
+
     return {
       name: (item.locale_name || item.name || '').trim(),
       vnum: item.vnum,
       image: icon ? `${WIKI}/assets/icons/${icon}` : null,
       wikiUrl: `${WIKI}/items/${item.vnum}`,
       bonuses: readBonuses(item, labelTable, unknown),
+      ...acquisition,
     };
   });
 
   const withoutBonus = rows.filter((row) => row.bonuses.length === 0).length;
+  const withoutSource = rows.filter((row) => row.sources.length === 0).length;
 
   await writeFile(opts.out, `${JSON.stringify(rows, null, 2)}\n`, 'utf8');
 
   console.log(`\n${rows.length} pet -> ${path.relative(ROOT, opts.out)}`);
   if (withoutIcon > 0) console.log(`  ${withoutIcon} petnek nincs ikonja`);
   if (withoutBonus > 0) console.log(`  ${withoutBonus} petnek nincs bónusza`);
+  if (opts.sources) {
+    console.log(`  ${rows.length - withoutSource} petnek van megszerzési infója`);
+    if (withoutSource > 0) {
+      console.log(`  ${withoutSource} petnél a wiki nem árulja el, honnan szerezhető:`);
+      rows
+        .filter((row) => row.sources.length === 0)
+        .forEach((row) => console.log(`    - ${row.name}`));
+    }
+  }
   if (unknown.size > 0) {
     console.warn(
       `\nFigyelem: ${unknown.size} bónusz-típushoz nem találtam feliratot, ` +

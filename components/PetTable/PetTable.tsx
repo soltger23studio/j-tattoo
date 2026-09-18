@@ -1,5 +1,5 @@
 import type { Pet } from '@/lib/types';
-import { RARITY_LABELS } from '@/lib/types';
+import { RARITY_LABELS, SOURCE_LABELS } from '@/lib/types';
 import styles from './PetTable.module.css';
 
 interface PetTableProps {
@@ -25,9 +25,11 @@ export default function PetTable({
               <span className="sr-only">Megvan</span>
             </th>
             <th>Név</th>
-            <th>Ritkaság</th>
+            <th className={styles.hideOnMobile}>Ritkaság</th>
             <th className={styles.hideOnMobile}>Kategória</th>
-            <th>Bónuszok</th>
+            <th>Megszerzés</th>
+            <th className={styles.hideOnMobile}>Hogyan</th>
+            <th className={styles.hideOnMobile}>Bónuszok</th>
           </tr>
         </thead>
         <tbody>
@@ -56,7 +58,7 @@ export default function PetTable({
                   </label>
                 </td>
                 <td
-                  className={styles.rarity}
+                  className={`${styles.rarity} ${styles.hideOnMobile}`}
                   style={
                     {
                       '--rarity-color': `var(--rarity-${pet.rarity})`,
@@ -68,15 +70,33 @@ export default function PetTable({
                 <td className={styles.hideOnMobile}>{pet.category}</td>
                 <td>
                   <div className={styles.badges}>
-                    {pet.bonuses && pet.bonuses.length > 0 ? (
-                      pet.bonuses.map((bonus) => (
-                        <span key={bonus} className={styles.badge}>
-                          {bonus}
+                    {pet.sources.length > 0 ? (
+                      pet.sources.map((source) => (
+                        <span key={source} className={styles.badge}>
+                          {SOURCE_LABELS[source]}
                         </span>
                       ))
                     ) : (
-                      <span className={styles.missing}>nincs megadva</span>
+                      <span
+                        className={`${styles.badge} ${styles.badgeUnknown}`}
+                      >
+                        ismeretlen
+                      </span>
                     )}
+                  </div>
+                </td>
+                <td className={`${styles.how} ${styles.hideOnMobile}`}>
+                  {pet.howToGet || (
+                    <span className={styles.missing}>nincs adat</span>
+                  )}
+                </td>
+                <td className={styles.hideOnMobile}>
+                  <div className={styles.badges}>
+                    {(pet.bonuses ?? []).map((bonus) => (
+                      <span key={bonus} className={styles.badge}>
+                        {bonus}
+                      </span>
+                    ))}
                   </div>
                 </td>
               </tr>

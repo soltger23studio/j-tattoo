@@ -123,8 +123,19 @@
   white-space: nowrap;
 }
 
-.missing {
+.badgeUnknown {
+  background: transparent;
+  border-color: var(--color-border-strong);
   color: var(--color-text-muted);
+}
+
+.how {
+  color: var(--color-text-muted);
+  min-width: 16rem;
+}
+
+.missing {
+  color: var(--color-danger);
   font-style: italic;
 }
 
