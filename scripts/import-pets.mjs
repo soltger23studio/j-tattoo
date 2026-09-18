@@ -201,6 +201,7 @@ const BONUS_KEYS = ['bonuses', 'bonus', 'applies', 'affects', 'bonuszok'];
 const SOURCE_KEYS = ['sources', 'source', 'forrasok'];
 const HOWTO_KEYS = ['howtoget', 'how_to_get', 'howto', 'megszerzes'];
 const PLACE_KEYS = ['location', 'place', 'hely', 'map'];
+const NPC_KEYS = ['npcs', 'npc', 'vendors', 'sellers'];
 
 /** A lib/types.ts PetSource értékei – ismeretlen címkét nem írunk ki. */
 const VALID_SOURCES = [
@@ -265,6 +266,7 @@ function normalizeJsonItem(raw, baseUrl) {
     sources: pickSources(raw),
     howToGet: stripTags(pick(raw, HOWTO_KEYS) ?? ''),
     location: stripTags(pick(raw, PLACE_KEYS) ?? ''),
+    npcs: pickList(raw, NPC_KEYS),
   };
 }
 
@@ -448,6 +450,9 @@ function renderPet(pet) {
   ];
   if (pet.howToGet) lines.push(`    howToGet: ${quote(pet.howToGet)},`);
   if (pet.location) lines.push(`    location: ${quote(pet.location)},`);
+  if (pet.npcs.length > 0) {
+    lines.push(`    npcs: [${pet.npcs.map(quote).join(', ')}],`);
+  }
   if (pet.bonuses.length > 0) {
     lines.push(`    bonuses: [${pet.bonuses.map(quote).join(', ')}],`);
   }
@@ -538,6 +543,7 @@ async function main() {
       sources: item.sources ?? [],
       howToGet: item.howToGet || null,
       location: item.location || null,
+      npcs: item.npcs ?? [],
       bonuses: item.bonuses ?? [],
       image: null,
       remoteImage: item.image,

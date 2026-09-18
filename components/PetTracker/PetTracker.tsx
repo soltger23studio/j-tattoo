@@ -11,6 +11,7 @@ import PetTable from '@/components/PetTable/PetTable';
 import ProgressPanel, {
   type BreakdownEntry,
 } from '@/components/ProgressPanel/ProgressPanel';
+import { GROUPS, groupOf } from '@/lib/groups';
 import type { Pet, PetRarity, PetSource } from '@/lib/types';
 import { RARITY_ORDER, isIncomplete } from '@/lib/types';
 import { useCollection } from '@/lib/useCollection';
@@ -45,6 +46,7 @@ export default function PetTracker({ pets }: PetTrackerProps) {
   const { owned, loaded, toggle, markMany, replaceAll, reset } = useCollection();
   const [filters, setFilters] = useState<FilterState>(DEFAULT_FILTERS);
   const [view, setView] = useState<'cards' | 'list'>('cards');
+  const [group, setGroup] = useState<string>('all');
 
   /** A szűrő legördülőit magából az adatból építjük, hogy új kategória
    *  vagy forrás hozzáadásakor ne kelljen itt is módosítani. */
@@ -71,10 +73,23 @@ export default function PetTracker({ pets }: PetTrackerProps) {
     };
   }, [pets]);
 
+  /** Melyik pet melyik fülre tartozik, és melyik fülön hány pet van. */
+  const { groupById, groupCounts } = useMemo(() => {
+    const byId = new Map<string, string>();
+    const counts = new Map<string, number>();
+    for (const pet of pets) {
+      const id = groupOf(pet);
+      byId.set(pet.id, id);
+      counts.set(id, (counts.get(id) ?? 0) + 1);
+    }
+    return { groupById: byId, groupCounts: counts };
+  }, [pets]);
+
   const visiblePets = useMemo(() => {
     const query = normalize(filters.search.trim());
 
     const filtered = pets.filter((pet) => {
+      if (group !== 'all' && groupById.get(pet.id) !== group) return false;
       if (query && !(searchIndex.get(pet.id) ?? '').includes(query)) {
         return false;
       }
@@ -105,24 +120,34 @@ export default function PetTracker({ pets }: PetTrackerProps) {
       if (byRarity !== 0) return byRarity;
       return a.name.localeCompare(b.name, 'hu');
     });
-  }, [pets, filters, owned, searchIndex]);
+  }, [pets, filters, owned, searchIndex, group, groupById]);
 
   const breakdown = useMemo<BreakdownEntry[]>(() => {
     const totals = new Map<string, { owned: number; total: number }>();
     for (const pet of pets) {
-      const entry = totals.get(pet.category) ?? { owned: 0, total: 0 };
+      const id = groupById.get(pet.id) ?? 'egyeb';
+      const entry = totals.get(id) ?? { owned: 0, total: 0 };
       entry.total += 1;
       if (owned.has(pet.id)) entry.owned += 1;
-      totals.set(pet.category, entry);
+      totals.set(id, entry);
     }
-    return [...totals.entries()]
-      .map(([label, value]) => ({ label, ...value }))
-      .sort((a, b) => a.label.localeCompare(b.label, 'hu'));
-  }, [pets, owned]);
+    // A fülek sorrendjét követjük, hogy a sáv és a fülsor egyezzen.
+    return GROUPS.filter((entry) => totals.has(entry.id)).map((entry) => ({
+      label: entry.label,
+      ...totals.get(entry.id)!,
+    }));
+  }, [pets, owned, groupById]);
 
+  /** Csak az aktuális fülön belül számoljuk – különben a jelölőnégyzet
+   *  olyan darabszámot ígérne, amiből a fülön egy sincs. */
   const incompleteCount = useMemo(
-    () => pets.filter(isIncomplete).length,
-    [pets],
+    () =>
+      pets.filter(
+        (pet) =>
+          (group === 'all' || groupById.get(pet.id) === group) &&
+          isIncomplete(pet),
+      ).length,
+    [pets, group, groupById],
   );
 
   /** Csak a valóban létező petek pipáit tartjuk meg – ha egy pet kikerül
@@ -157,6 +182,39 @@ export default function PetTracker({ pets }: PetTrackerProps) {
           onReset={reset}
         />
       </div>
+
+      <nav className={styles.tabs} aria-label="Megszerzési hely">
+        <button
+          type="button"
+          className={`${styles.tab} ${group === 'all' ? styles.tabActive : ''}`}
+          aria-pressed={group === 'all'}
+          onClick={() => setGroup('all')}
+        >
+          Összes <span className={styles.tabCount}>{pets.length}</span>
+        </button>
+        {GROUPS.filter((entry) => (groupCounts.get(entry.id) ?? 0) > 0).map(
+          (entry) => (
+            <button
+              key={entry.id}
+              type="button"
+              className={`${styles.tab} ${
+                group === entry.id ? styles.tabActive : ''
+              }`}
+              aria-pressed={group === entry.id}
+              onClick={() => setGroup(entry.id)}
+            >
+              {entry.label}{' '}
+              <span className={styles.tabCount}>{groupCounts.get(entry.id)}</span>
+            </button>
+          ),
+        )}
+      </nav>
+
+      {group !== 'all' && (
+        <p className={styles.tabHint}>
+          {GROUPS.find((entry) => entry.id === group)?.hint}
+        </p>
+      )}
 
       <Filters
         filters={filters}

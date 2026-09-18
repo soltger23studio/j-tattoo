@@ -361,6 +361,9 @@ function buildAcquisition({ shop, drops, articles }) {
     sources: [...sources],
     howToGet: sentences.length > 0 ? sentences.join(' ') : null,
     location,
+    // Az oldal ez alapján csoportosít fülekre, ezért külön mezőben is
+    // megtartjuk, ne a howToGet mondatból kelljen visszafejteni.
+    npcs: (shop ?? []).map((entry) => entry.npc),
   };
 }
 

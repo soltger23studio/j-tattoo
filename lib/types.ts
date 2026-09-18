@@ -31,6 +31,9 @@ export interface Pet {
   howToGet?: string;
   /** Hol (NPC, kazamata, boss – a legbeszédesebb egy forrás). */
   location?: string;
+  /** Mely NPC-k árulják. A fülekre bontás ez alapján megy, ezért külön
+   *  mezőben van, nem a howToGet mondatból visszafejtve. */
+  npcs?: string[];
   /** Milyen bónuszokat ad, a wiki magyar feliratával
    *  (pl. "Szörnyek elleni erő +3%"). */
   bonuses?: string[];
