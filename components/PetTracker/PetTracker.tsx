@@ -12,7 +12,7 @@ import ProgressPanel, {
   type BreakdownEntry,
 } from '@/components/ProgressPanel/ProgressPanel';
 import { GROUPS, groupOf } from '@/lib/groups';
-import type { Pet, PetRarity, PetSource } from '@/lib/types';
+import type { Pet } from '@/lib/types';
 import { RARITY_ORDER, isIncomplete } from '@/lib/types';
 import { useCollection } from '@/lib/useCollection';
 import styles from './PetTracker.module.css';
@@ -48,29 +48,12 @@ export default function PetTracker({ pets }: PetTrackerProps) {
   const [view, setView] = useState<'cards' | 'list'>('cards');
   const [group, setGroup] = useState<string>('all');
 
-  /** A szűrő legördülőit magából az adatból építjük, hogy új kategória
-   *  vagy forrás hozzáadásakor ne kelljen itt is módosítani. */
-  const { categories, sources, rarities, searchIndex } = useMemo(() => {
-    const categorySet = new Set<string>();
-    const sourceSet = new Set<PetSource>();
-    const raritySet = new Set<PetRarity>();
+  /** Ékezet-független kereső-index, hogy gépelés közben ne kelljen
+   *  minden petnél újra összefűzni a kereshető szöveget. */
+  const searchIndex = useMemo(() => {
     const index = new Map<string, string>();
-
-    for (const pet of pets) {
-      categorySet.add(pet.category);
-      pet.sources.forEach((source) => sourceSet.add(source));
-      raritySet.add(pet.rarity);
-      index.set(pet.id, searchableText(pet));
-    }
-
-    return {
-      categories: [...categorySet].sort((a, b) => a.localeCompare(b, 'hu')),
-      sources: [...sourceSet].sort(),
-      rarities: [...raritySet].sort(
-        (a, b) => RARITY_ORDER[a] - RARITY_ORDER[b],
-      ),
-      searchIndex: index,
-    };
+    for (const pet of pets) index.set(pet.id, searchableText(pet));
+    return index;
   }, [pets]);
 
   /** Melyik pet melyik fülre tartozik, és melyik fülön hány pet van. */
@@ -95,27 +78,14 @@ export default function PetTracker({ pets }: PetTrackerProps) {
       }
       if (filters.status === 'owned' && !owned.has(pet.id)) return false;
       if (filters.status === 'missing' && owned.has(pet.id)) return false;
-      if (filters.source !== 'all' && !pet.sources.includes(filters.source)) {
-        return false;
-      }
-      if (filters.rarity !== 'all' && pet.rarity !== filters.rarity) {
-        return false;
-      }
-      if (filters.category !== 'all' && pet.category !== filters.category) {
-        return false;
-      }
       if (filters.onlyIncomplete && !isIncomplete(pet)) return false;
       return true;
     });
 
+    // Fix sorrend: ritkaság szerint, azon belül név. Amíg minden pet azonos
+    // ritkaságú, ez gyakorlatilag ABC-sorrend – ha később kitöltöd a rarity
+    // mezőt, a ritkábbak maguktól előre kerülnek.
     return filtered.sort((a, b) => {
-      if (filters.sort === 'name') {
-        return a.name.localeCompare(b.name, 'hu');
-      }
-      if (filters.sort === 'category') {
-        const byCategory = a.category.localeCompare(b.category, 'hu');
-        if (byCategory !== 0) return byCategory;
-      }
       const byRarity = RARITY_ORDER[a.rarity] - RARITY_ORDER[b.rarity];
       if (byRarity !== 0) return byRarity;
       return a.name.localeCompare(b.name, 'hu');
@@ -219,9 +189,6 @@ export default function PetTracker({ pets }: PetTrackerProps) {
       <Filters
         filters={filters}
         onChange={setFilters}
-        categories={categories}
-        sources={sources}
-        rarities={rarities}
         resultCount={visiblePets.length}
         totalCount={pets.length}
         incompleteCount={incompleteCount}
