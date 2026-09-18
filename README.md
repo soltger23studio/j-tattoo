@@ -81,6 +81,24 @@ nincs adat – ezeket az oldal pirossal jelzi, és külön rá lehet szűrni.
 Újbóli importnál a szkript a meglévő `lib/pets.ts`-ből **átveszi a már meglévő
 `id`-ket** a pet neve alapján, hogy a látogatók pipái ne vesszenek el.
 
+### Heti wiki-figyelő
+
+A `.github/workflows/wiki-figyelo.yml` minden hétfőn lefuttatja ugyanezt a
+két lépést a wiki ellen. Ha talál változást – új pet, átnevezés, módosult
+bónusz vagy ár –, **nyit egy pull requestet** a frissített `lib/pets.ts`-szel
+és képekkel, a leírásban felsorolva, mely petek kerültek be vagy tűntek el.
+Ha nincs változás, nem csinál semmit.
+
+Kézzel is indítható: repo **Actions** fül → *Wiki-figyelő* → **Run workflow**.
+
+A `lib/pet-overrides.ts`-hez soha nem nyúl, tehát a kézi kiegészítések egy
+ilyen frissítést is túlélnek.
+
+> A PR nyitásához a repóban engedélyezve kell lennie a
+> **Settings → Actions → General → Allow GitHub Actions to create and approve
+> pull requests** kapcsolónak. Enélkül a futás a PR-lépésnél elhasal, a
+> frissített ág viszont akkor is felkerül.
+
 ## Hogyan adj hozzá vagy módosíts peteket
 
 Két fájl van, és **fontos, hogy melyikbe írsz**:
@@ -227,4 +245,6 @@ lib/groups.ts   a fülek: melyik pet melyik csoportba kerül
 public/images/pets/  pet-képek
 scripts/fetch-wiki-pets.mjs  adat leszedése a wiki API-jából -> wiki-pets.json
 scripts/import-pets.mjs      abból lib/pets.ts + képek
+scripts/pet-nevek.mjs        pet-nevek listája (a wiki-figyelő használja)
+.github/workflows/           heti wiki-figyelő
 ```
