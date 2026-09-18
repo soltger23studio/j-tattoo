@@ -32,6 +32,50 @@ npm run dev
 
 Ezután nyisd meg: http://localhost:3000
 
+## Pet-lista importálása a wikiről
+
+A teljes pet-lista legépelése helyett a `scripts/import-pets.mjs` kiszedi a
+peteket a szerver wikijéről, letölti a képeket a `public/images/pets/` mappába,
+és legenerálja a `lib/pets.ts`-t:
+
+```bash
+node scripts/import-pets.mjs "https://wiki.venor2.hu/items?type=ITEM_COSTUME&subtype=COSTUME_PET"
+```
+
+Ha a wiki nem érhető el arról a gépről, ahol a szkriptet futtatod, mentsd le az
+oldalt és add meg fájlként:
+
+```bash
+node scripts/import-pets.mjs ./wiki.html     # lementett oldal
+node scripts/import-pets.mjs ./pets.json     # a wiki JSON-válasza
+```
+
+A szkript többféle oldalszerkezetet ismer: táblázatos listát, kártyás listát,
+JSON API-választ és a HTML-be ágyazott JSON-t is. Ha a lista JavaScripttel
+töltődik be, a nyers HTML-ben nincs adat – ilyenkor a böngészőben nyisd meg az
+oldalt, majd DevTools (F12) → Elements → jobb klikk a `<html>`-en → **Copy
+outerHTML**, és azt mentsd el `wiki.html` néven.
+
+Kapcsolók:
+
+| kapcsoló | mit csinál |
+|---|---|
+| `--dry-run` | nem ír fájlt, csak kilistázza, mit talált |
+| `--no-images` | kihagyja a képek letöltését |
+| `--category "Pet kosztüm"` | kategória az importált peteknek |
+| `--rarity common` | ritkaság az importált peteknek |
+| `--pages 5` | hány lapot kérjen le (alapból addig megy, amíg új pet jön) |
+| `--out lib/pets.ts` | kimeneti fájl |
+
+Amit a szkript **nem** tud: a wikin nincs megszerzési infó, ezért minden
+importált petnél üres marad a `sources`, és nincs `howToGet`. Az oldal az ilyen
+peteket pirossal jelzi, és külön rá lehet szűrni – így szépen végig lehet menni
+rajtuk, és kézzel kitölteni. Ugyanígy a `category` és a `rarity` is egységes
+alapérték: ezeket utólag érdemes kézzel pontosítani.
+
+Újbóli importnál a szkript a meglévő `lib/pets.ts`-ből **átveszi a már meglévő
+`id`-ket** a pet neve alapján, hogy a látogatók pipái ne vesszenek el.
+
 ## Hogyan adj hozzá vagy módosíts peteket
 
 Minden pet-adat **egyetlen fájlban** van: `lib/pets.ts`. A kódhoz nem kell
@@ -149,4 +193,5 @@ components/     komponensek, mindegyik saját mappában a CSS Module-jával
 lib/pets.ts     >>> ITT VAN A PET-LISTA <<<
 lib/types.ts    adatszerkezet és a feliratok (magyar elnevezések)
 public/images/pets/  pet-képek
+scripts/import-pets.mjs  pet-import a wikiről
 ```
