@@ -1,3 +1,4 @@
+import { Analytics } from '@vercel/analytics/next';
 import type { Metadata } from 'next';
 import { Inter } from 'next/font/google';
 import './globals.css';
@@ -34,7 +35,13 @@ export default function RootLayout({
 }) {
   return (
     <html lang="hu" className={inter.variable}>
-      <body>{children}</body>
+      <body>
+        {children}
+        {/* Vercel Web Analytics. Csak a Vercelre kirakott oldalon küld
+            adatot – helyi futtatáskor és más hostingon nem csinál semmit.
+            A Vercel projektben külön be kell kapcsolni: Analytics fül. */}
+        <Analytics />
+      </body>
     </html>
   );
 }
