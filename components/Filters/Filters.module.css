@@ -136,3 +136,23 @@
     font-size: 0.78rem;
   }
 }
+
+.checkboxRow {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-xs);
+  font-size: 0.85rem;
+  color: var(--color-text-muted);
+  cursor: pointer;
+}
+
+.checkboxRow input {
+  width: 1rem;
+  height: 1rem;
+  accent-color: var(--color-accent);
+  cursor: pointer;
+}
+
+.checkboxRow:hover {
+  color: var(--color-text);
+}

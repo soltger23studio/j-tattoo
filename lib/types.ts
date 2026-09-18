@@ -22,10 +22,13 @@ export interface Pet {
   /** Kategória (pl. "Harci pet", "Dísz pet"). Szabadon bővíthető. */
   category: string;
   rarity: PetRarity;
-  /** Egy petnek több megszerzési módja is lehet. */
+  /** Egy petnek több megszerzési módja is lehet.
+   *  Üres tömb = még nem tudjuk, honnan szerezhető. */
   sources: PetSource[];
-  /** Rövid, konkrét leírás: hogyan szerezhető meg. */
-  howToGet: string;
+  /** Rövid, konkrét leírás: hogyan szerezhető meg.
+   *  Üresen hagyható, amíg nincs meg az infó – az oldal jelzi a hiányt,
+   *  és külön rá lehet szűrni a hiányos petekre. */
+  howToGet?: string;
   /** Hol (térkép, NPC, bolt, esemény neve). */
   location?: string;
   /** Milyen bónuszokat ad. */
@@ -64,3 +67,9 @@ export const RARITY_ORDER: Record<PetRarity, number> = {
   rare: 2,
   common: 3,
 };
+
+
+/** Egy pet akkor "hiányos", ha még nem tudjuk, honnan szerezhető meg. */
+export function isIncomplete(pet: { sources: PetSource[]; howToGet?: string }): boolean {
+  return pet.sources.length === 0 || !pet.howToGet || pet.howToGet.trim() === '';
+}

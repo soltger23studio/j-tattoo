@@ -12,6 +12,8 @@ export interface FilterState {
   rarity: PetRarity | 'all';
   category: string | 'all';
   sort: SortOption;
+  /** Csak azok a petek, amiknél még nincs kitöltve a megszerzési mód. */
+  onlyIncomplete: boolean;
 }
 
 export const DEFAULT_FILTERS: FilterState = {
@@ -21,6 +23,7 @@ export const DEFAULT_FILTERS: FilterState = {
   rarity: 'all',
   category: 'all',
   sort: 'rarity',
+  onlyIncomplete: false,
 };
 
 interface FiltersProps {
@@ -31,6 +34,8 @@ interface FiltersProps {
   rarities: PetRarity[];
   resultCount: number;
   totalCount: number;
+  /** Hány petnél hiányzik még a megszerzési infó. */
+  incompleteCount: number;
 }
 
 const STATUS_OPTIONS: { value: StatusFilter; label: string }[] = [
@@ -53,6 +58,7 @@ export default function Filters({
   rarities,
   resultCount,
   totalCount,
+  incompleteCount,
 }: FiltersProps) {
   const update = <K extends keyof FilterState>(
     key: K,
@@ -66,7 +72,8 @@ export default function Filters({
     filters.status !== DEFAULT_FILTERS.status ||
     filters.source !== DEFAULT_FILTERS.source ||
     filters.rarity !== DEFAULT_FILTERS.rarity ||
-    filters.category !== DEFAULT_FILTERS.category;
+    filters.category !== DEFAULT_FILTERS.category ||
+    filters.onlyIncomplete !== DEFAULT_FILTERS.onlyIncomplete;
 
   return (
     <section className={styles.wrapper} aria-label="Szűrők">
@@ -179,6 +186,22 @@ export default function Filters({
           </select>
         </div>
       </div>
+
+      {incompleteCount > 0 && (
+        <label className={styles.checkboxRow}>
+          <input
+            type="checkbox"
+            checked={filters.onlyIncomplete}
+            onChange={(event) =>
+              update('onlyIncomplete', event.target.checked)
+            }
+          />
+          <span>
+            Csak a hiányos petek ({incompleteCount} db) – ezeknél még nincs
+            kitöltve, honnan szerezhetők
+          </span>
+        </label>
+      )}
 
       <div className={styles.footer}>
         <span>

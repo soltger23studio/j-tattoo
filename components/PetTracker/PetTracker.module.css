@@ -72,3 +72,14 @@
     grid-template-columns: 1fr;
   }
 }
+
+.viewToggle {
+  display: flex;
+  gap: var(--spacing-xs);
+  margin-left: auto;
+}
+
+.viewActive {
+  border-color: var(--color-accent);
+  color: var(--color-accent);
+}

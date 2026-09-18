@@ -7,11 +7,12 @@ import Filters, {
   type FilterState,
 } from '@/components/Filters/Filters';
 import PetCard from '@/components/PetCard/PetCard';
+import PetTable from '@/components/PetTable/PetTable';
 import ProgressPanel, {
   type BreakdownEntry,
 } from '@/components/ProgressPanel/ProgressPanel';
 import type { Pet, PetRarity, PetSource } from '@/lib/types';
-import { RARITY_ORDER } from '@/lib/types';
+import { RARITY_ORDER, isIncomplete } from '@/lib/types';
 import { useCollection } from '@/lib/useCollection';
 import styles from './PetTracker.module.css';
 
@@ -28,7 +29,7 @@ function searchableText(pet: Pet): string {
     [
       pet.name,
       pet.category,
-      pet.howToGet,
+      pet.howToGet ?? '',
       pet.location ?? '',
       pet.notes ?? '',
       ...(pet.bonuses ?? []),
@@ -43,6 +44,7 @@ interface PetTrackerProps {
 export default function PetTracker({ pets }: PetTrackerProps) {
   const { owned, loaded, toggle, markMany, replaceAll, reset } = useCollection();
   const [filters, setFilters] = useState<FilterState>(DEFAULT_FILTERS);
+  const [view, setView] = useState<'cards' | 'list'>('cards');
 
   /** A szűrő legördülőit magából az adatból építjük, hogy új kategória
    *  vagy forrás hozzáadásakor ne kelljen itt is módosítani. */
@@ -87,6 +89,7 @@ export default function PetTracker({ pets }: PetTrackerProps) {
       if (filters.category !== 'all' && pet.category !== filters.category) {
         return false;
       }
+      if (filters.onlyIncomplete && !isIncomplete(pet)) return false;
       return true;
     });
 
@@ -116,6 +119,11 @@ export default function PetTracker({ pets }: PetTrackerProps) {
       .map(([label, value]) => ({ label, ...value }))
       .sort((a, b) => a.label.localeCompare(b.label, 'hu'));
   }, [pets, owned]);
+
+  const incompleteCount = useMemo(
+    () => pets.filter(isIncomplete).length,
+    [pets],
+  );
 
   /** Csak a valóban létező petek pipáit tartjuk meg – ha egy pet kikerül
    *  az adatokból, ne lógjon bent a régi id a mentésben. */
@@ -158,6 +166,7 @@ export default function PetTracker({ pets }: PetTrackerProps) {
         rarities={rarities}
         resultCount={visiblePets.length}
         totalCount={pets.length}
+        incompleteCount={incompleteCount}
       />
 
       <div className={styles.bulkRow}>
@@ -178,6 +187,29 @@ export default function PetTracker({ pets }: PetTrackerProps) {
         >
           Pipák levétele
         </button>
+
+        <div className={styles.viewToggle} role="group" aria-label="Nézet">
+          <button
+            type="button"
+            className={`${styles.bulkButton} ${
+              view === 'cards' ? styles.viewActive : ''
+            }`}
+            aria-pressed={view === 'cards'}
+            onClick={() => setView('cards')}
+          >
+            Kártyák
+          </button>
+          <button
+            type="button"
+            className={`${styles.bulkButton} ${
+              view === 'list' ? styles.viewActive : ''
+            }`}
+            aria-pressed={view === 'list'}
+            onClick={() => setView('list')}
+          >
+            Tömör lista
+          </button>
+        </div>
       </div>
 
       {visiblePets.length === 0 ? (
@@ -185,6 +217,13 @@ export default function PetTracker({ pets }: PetTrackerProps) {
           Nincs a szűrőknek megfelelő pet. Próbáld módosítani a keresést vagy a
           szűrőket.
         </p>
+      ) : view === 'list' ? (
+        <PetTable
+          pets={visiblePets}
+          owned={owned}
+          onToggle={toggle}
+          disabled={!loaded}
+        />
       ) : (
         <ul className={styles.grid}>
           {visiblePets.map((pet) => (

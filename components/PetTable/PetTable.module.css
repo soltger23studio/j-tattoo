@@ -1,0 +1,154 @@
+.wrapper {
+  overflow-x: auto;
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+}
+
+.table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.86rem;
+}
+
+.table th {
+  position: sticky;
+  top: 0;
+  z-index: 1;
+  padding: 0.6rem var(--spacing-xs);
+  background: var(--color-surface-2);
+  border-bottom: 1px solid var(--color-border-strong);
+  color: var(--color-text-muted);
+  font-size: 0.72rem;
+  font-weight: 600;
+  text-align: left;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  white-space: nowrap;
+}
+
+.table td {
+  padding: 0.5rem var(--spacing-xs);
+  border-bottom: 1px solid var(--color-border);
+  vertical-align: top;
+}
+
+.row:last-child td {
+  border-bottom: none;
+}
+
+.row:hover td {
+  background: var(--color-surface-2);
+}
+
+.ownedRow td {
+  background: var(--color-owned-soft);
+}
+
+.ownedRow:hover td {
+  background: rgba(111, 191, 91, 0.18);
+}
+
+.checkCell {
+  width: 2.5rem;
+}
+
+.checkbox {
+  position: relative;
+  width: 1.3rem;
+  height: 1.3rem;
+  margin: 0;
+  appearance: none;
+  -webkit-appearance: none;
+  background: var(--color-bg);
+  border: 2px solid var(--color-border-strong);
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  transition:
+    background var(--transition),
+    border-color var(--transition);
+}
+
+.checkbox:hover:not(:disabled) {
+  border-color: var(--color-owned);
+}
+
+.checkbox:checked {
+  background: var(--color-owned);
+  border-color: var(--color-owned);
+}
+
+.checkbox:checked::after {
+  content: '';
+  position: absolute;
+  top: 0.05rem;
+  left: 0.32rem;
+  width: 0.28rem;
+  height: 0.6rem;
+  border: solid var(--color-bg);
+  border-width: 0 2.5px 2.5px 0;
+  transform: rotate(45deg);
+}
+
+.checkbox:disabled {
+  opacity: 0.45;
+  cursor: progress;
+}
+
+.name {
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.rarity {
+  color: var(--rarity-color);
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.badges {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.25rem;
+}
+
+.badge {
+  padding: 0.05rem 0.4rem;
+  background: var(--color-accent-soft);
+  border: 1px solid rgba(217, 164, 65, 0.3);
+  border-radius: 999px;
+  color: var(--color-accent);
+  font-size: 0.68rem;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.badgeUnknown {
+  background: transparent;
+  border-color: var(--color-border-strong);
+  color: var(--color-text-muted);
+}
+
+.how {
+  color: var(--color-text-muted);
+  min-width: 18rem;
+}
+
+.missing {
+  color: var(--color-danger);
+  font-style: italic;
+}
+
+.hideOnMobile {
+  display: table-cell;
+}
+
+@media (max-width: 760px) {
+  .hideOnMobile {
+    display: none;
+  }
+
+  .how {
+    min-width: 0;
+  }
+}

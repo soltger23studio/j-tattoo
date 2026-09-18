@@ -1,6 +1,6 @@
 import Image from 'next/image';
 import type { Pet } from '@/lib/types';
-import { RARITY_LABELS, SOURCE_LABELS } from '@/lib/types';
+import { RARITY_LABELS, SOURCE_LABELS, isIncomplete } from '@/lib/types';
 import styles from './PetCard.module.css';
 
 interface PetCardProps {
@@ -18,6 +18,7 @@ export default function PetCard({
   disabled,
 }: PetCardProps) {
   const checkboxId = `pet-${pet.id}`;
+  const incomplete = isIncomplete(pet);
 
   return (
     <article
@@ -62,14 +63,26 @@ export default function PetCard({
       </div>
 
       <div className={styles.badges}>
-        {pet.sources.map((source) => (
-          <span key={source} className={styles.badge}>
-            {SOURCE_LABELS[source]}
+        {pet.sources.length > 0 ? (
+          pet.sources.map((source) => (
+            <span key={source} className={styles.badge}>
+              {SOURCE_LABELS[source]}
+            </span>
+          ))
+        ) : (
+          <span className={`${styles.badge} ${styles.badgeUnknown}`}>
+            Megszerzés ismeretlen
           </span>
-        ))}
+        )}
       </div>
 
-      <p className={styles.how}>{pet.howToGet}</p>
+      {pet.howToGet ? (
+        <p className={styles.how}>{pet.howToGet}</p>
+      ) : (
+        <p className={styles.missing}>
+          Még nincs kitöltve, hogyan lehet megszerezni.
+        </p>
+      )}
 
       {pet.location && (
         <p className={styles.detail}>

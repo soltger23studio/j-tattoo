@@ -239,6 +239,23 @@ export const PETS: Pet[] = [
     bonuses: ['+10% támadóerő', '+10% tapasztalat', 'Újraéledés bónusz'],
     notes: 'Évente egyszer, a szerver születésnapján.',
   },
+  // --- Példa arra, hogyan néz ki egy wikiről frissen importált pet, aminél
+  // --- még nem tudjuk, honnan szerezhető meg. A `sources` üres, a `howToGet`
+  // --- hiányzik: az oldal ezt pirossal jelzi, és rá lehet szűrni.
+  {
+    id: 'ismeretlen-pelda-1',
+    name: 'Szellemróka',
+    category: 'Dísz pet',
+    rarity: 'rare',
+    sources: [],
+  },
+  {
+    id: 'ismeretlen-pelda-2',
+    name: 'Kőgólem',
+    category: 'Harci pet',
+    rarity: 'epic',
+    sources: [],
+  },
   {
     id: 'arnyfarkas',
     name: 'Árnyfarkas',

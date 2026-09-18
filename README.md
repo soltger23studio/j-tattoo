@@ -15,6 +15,11 @@ szerezhető meg**, és mindenki **kipipálhatja magának**, melyik van már meg.
 - **Haladásjelző**: összesített és kategóriánkénti százalék
 - **Tömeges pipálás**: a szűrt találatok egyszerre bejelölhetők – így egy nagy
   gyűjtemény percek alatt felvihető
+- **Két nézet**: részletes kártyák, vagy tömör lista (több száz petnél ez
+  sokkal átláthatóbb)
+- **Hiányos petek szűrése**: amelyiknél még nem tudjuk, honnan szerezhető meg,
+  azt az oldal pirossal jelzi, és külön rá lehet szűrni – így látszik, mit kell
+  még kideríteni
 - **Export / import kód**: a gyűjtemény átvihető másik gépre vagy telefonra
 - Mobilon is használható
 
@@ -49,6 +54,25 @@ Egy pet így néz ki:
   notes: 'Heti egyszer futható.', // opcionális
 }
 ```
+
+### Ha még nem tudod, honnan szerezhető meg
+
+Hagyd üresen a `sources` tömböt, és hagyd ki a `howToGet` mezőt:
+
+```ts
+{
+  id: 'szellemroka',
+  name: 'Szellemróka',
+  category: 'Dísz pet',
+  rarity: 'rare',
+  sources: [],
+}
+```
+
+Az ilyen pet is megjelenik és pipálható, de az oldal jelzi, hogy hiányzik a
+megszerzési infó, és a szűrőben egy pipával kilistázható az összes ilyen.
+Ez akkor hasznos, ha a pet-listát a wikiről importáljuk (onnan a nevek és a
+képek jönnek), a megszerzési módokat viszont utólag kell kitölteni.
 
 A `sources` lehetséges értékei:
 
