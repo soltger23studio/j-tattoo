@@ -1,0 +1,42 @@
+.header {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-xs);
+  padding: var(--spacing-lg) 0 var(--spacing-md);
+  text-align: center;
+}
+
+.title {
+  font-size: clamp(1.9rem, 5vw, 3rem);
+  font-weight: 750;
+  letter-spacing: -0.02em;
+}
+
+.accent {
+  color: var(--color-accent);
+}
+
+.subtitle {
+  max-width: 46rem;
+  margin: 0 auto;
+  color: var(--color-text-muted);
+  font-size: clamp(0.95rem, 2vw, 1.05rem);
+}
+
+.banner {
+  display: block;
+  max-width: 52rem;
+  margin: 0 auto;
+  padding: var(--spacing-xs) var(--spacing-sm);
+  background: rgba(217, 164, 65, 0.1);
+  border: 1px dashed rgba(217, 164, 65, 0.45);
+  border-radius: var(--radius-sm);
+  color: var(--color-text-muted);
+  font-size: 0.85rem;
+  text-align: left;
+}
+
+.bannerLabel {
+  color: var(--color-accent);
+  font-weight: 700;
+}

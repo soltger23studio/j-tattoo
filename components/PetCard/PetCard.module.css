@@ -1,0 +1,184 @@
+.card {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-xs);
+  padding: var(--spacing-sm);
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-left: 3px solid var(--rarity-color, var(--color-border-strong));
+  border-radius: var(--radius-md);
+  transition:
+    transform var(--transition),
+    border-color var(--transition),
+    background var(--transition);
+}
+
+.card:hover {
+  transform: translateY(-2px);
+  border-color: var(--color-border-strong);
+}
+
+.owned {
+  background: linear-gradient(
+    180deg,
+    var(--color-owned-soft),
+    var(--color-surface) 55%
+  );
+  border-color: rgba(111, 191, 91, 0.35);
+}
+
+.header {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--spacing-xs);
+}
+
+.thumb {
+  flex-shrink: 0;
+  width: 48px;
+  height: 48px;
+  border-radius: var(--radius-sm);
+  object-fit: cover;
+  background: var(--color-surface-2);
+}
+
+.thumbFallback {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  width: 48px;
+  height: 48px;
+  border-radius: var(--radius-sm);
+  background: var(--color-surface-2);
+  border: 1px dashed var(--color-border-strong);
+  color: var(--rarity-color, var(--color-text-muted));
+  font-size: 1.25rem;
+  font-weight: 700;
+}
+
+.titleBlock {
+  flex: 1;
+  min-width: 0;
+}
+
+.name {
+  font-size: 1.05rem;
+  font-weight: 650;
+  word-break: break-word;
+}
+
+.meta {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--spacing-xs);
+  margin-top: 0.15rem;
+  font-size: 0.78rem;
+  color: var(--color-text-muted);
+}
+
+.rarity {
+  color: var(--rarity-color);
+  font-weight: 600;
+}
+
+.checkbox {
+  position: relative;
+  flex-shrink: 0;
+  width: 1.6rem;
+  height: 1.6rem;
+  margin: 0;
+  appearance: none;
+  -webkit-appearance: none;
+  background: var(--color-bg);
+  border: 2px solid var(--color-border-strong);
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  transition:
+    background var(--transition),
+    border-color var(--transition);
+}
+
+.checkbox:hover:not(:disabled) {
+  border-color: var(--color-owned);
+}
+
+.checkbox:checked {
+  background: var(--color-owned);
+  border-color: var(--color-owned);
+}
+
+/* Pipa jel */
+.checkbox:checked::after {
+  content: '';
+  position: absolute;
+  top: 0.12rem;
+  left: 0.42rem;
+  width: 0.34rem;
+  height: 0.72rem;
+  border: solid var(--color-bg);
+  border-width: 0 3px 3px 0;
+  transform: rotate(45deg);
+}
+
+.checkbox:disabled {
+  opacity: 0.45;
+  cursor: progress;
+}
+
+.badges {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.35rem;
+}
+
+.badge {
+  padding: 0.1rem 0.5rem;
+  background: var(--color-accent-soft);
+  border: 1px solid rgba(217, 164, 65, 0.3);
+  border-radius: 999px;
+  color: var(--color-accent);
+  font-size: 0.72rem;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.how {
+  margin: 0;
+  font-size: 0.88rem;
+  color: var(--color-text);
+}
+
+.detail {
+  margin: 0;
+  font-size: 0.82rem;
+  color: var(--color-text-muted);
+}
+
+.detail strong {
+  color: var(--color-text);
+  font-weight: 600;
+}
+
+.bonuses {
+  margin: 0;
+  padding-left: 1.1rem;
+  font-size: 0.82rem;
+  color: var(--color-text-muted);
+}
+
+.notes {
+  margin: 0;
+  padding-top: var(--spacing-xs);
+  border-top: 1px dashed var(--color-border);
+  font-size: 0.78rem;
+  font-style: italic;
+  color: var(--color-text-muted);
+}
+
+.wikiLink {
+  font-size: 0.8rem;
+  font-weight: 600;
+}
