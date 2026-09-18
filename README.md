@@ -188,10 +188,12 @@ Saját domain a Vercel projekt **Settings → Domains** menüjében köthető r�
 - Nincs backend és nincs adatbázis – az adat statikus, a jelölés a böngészőben
 
 ```
-app/            oldalak, layout, globális stílusok
+app/            oldalak, layout, globális stílusok, favicon (icon.svg)
 components/     komponensek, mindegyik saját mappában a CSS Module-jával
-lib/pets.ts     >>> ITT VAN A PET-LISTA <<<
-lib/types.ts    adatszerkezet és a feliratok (magyar elnevezések)
+lib/pets.ts     >>> ITT VAN A PET-LISTA <<< (generált, de kézzel is írható)
+lib/types.ts    adatszerkezet, feliratok, forrás-színek
+lib/groups.ts   a fülek: melyik pet melyik csoportba kerül
 public/images/pets/  pet-képek
-scripts/import-pets.mjs  pet-import a wikiről
+scripts/fetch-wiki-pets.mjs  adat leszedése a wiki API-jából -> wiki-pets.json
+scripts/import-pets.mjs      abból lib/pets.ts + képek
 ```
