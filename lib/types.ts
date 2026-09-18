@@ -65,7 +65,7 @@ export const SOURCE_LABELS: Record<PetSource, string> = {
   quest: 'Küldetés',
   craft: 'Készítés',
   trade: 'Csere / piac',
-  donate: 'Támogatói',
+  donate: 'Item Shop',
   other: 'Egyéb',
 };
 
@@ -80,11 +80,11 @@ export const SOURCE_PRIORITY: PetSource[] = [
   'dungeon',
   'event',
   'drop',
-  'shop',
   'quest',
+  'donate',
+  'shop',
   'craft',
   'trade',
-  'donate',
   'other',
 ];
 

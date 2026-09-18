@@ -1,6 +1,7 @@
 import PetTracker from '@/components/PetTracker/PetTracker';
 import SiteHeader from '@/components/SiteHeader/SiteHeader';
-import { IS_SAMPLE_DATA, PETS } from '@/lib/pets';
+import { PETS } from '@/lib/pet-overrides';
+import { IS_SAMPLE_DATA } from '@/lib/pets';
 import styles from './page.module.css';
 
 export default function HomePage() {

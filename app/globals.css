@@ -25,13 +25,17 @@
   /* Megszerzési források. Ez adja a kártyák bal szélét és a forrás-címkéket,
    * vagyis a rács színkódját. Szándékosan nincs köztük zöld: a zöld ebben a
    * felületen azt jelenti, hogy "megvan", azt nem keverjük össze semmivel.
-   * A ritkább forrásoknak (quest, craft, trade, donate, other) nincs saját
-   * színük – azok a --source-unknown-ra esnek vissza. */
+   * A maradéknak (craft, trade, other) nincs saját színük – azok a
+   * --source-unknown-ra esnek vissza. */
   --source-boss: #e0614a;
   --source-dungeon: #b06ee0;
   --source-event: #e8933c;
   --source-shop: #4fb3a2;
   --source-drop: #5a9fe0;
+  /* A küldetés sárga, mert a játékban is az a küldetés-jelölő színe. */
+  --source-quest: #d9c04a;
+  /* Item Shop – rózsaszín, hogy ne keveredjen a narancs eseménnyel. */
+  --source-donate: #e07ab0;
   --source-unknown: #7a6f5e;
 
   --spacing-xs: 0.5rem;
