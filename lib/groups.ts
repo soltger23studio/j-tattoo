@@ -43,6 +43,18 @@ export const GROUPS: PetGroup[] = [
     matches: (pet) => soldBy(pet, 'Theowahdan'),
   },
   {
+    id: 'alkimista',
+    label: 'Alkimista',
+    hint: 'Az Alkimista NPC-nél megvásárolható petek.',
+    matches: (pet) => soldBy(pet, 'Alkimista'),
+  },
+  {
+    id: 'biologus',
+    label: 'Biológus',
+    hint: 'A Chaegirab biológusnál megvásárolható petek.',
+    matches: (pet) => soldBy(pet, 'Chaegirab biológus'),
+  },
+  {
     id: 'event',
     label: 'Esemény',
     hint: 'Eseményhez kötött petek: event-NPC-nél vagy event-ládából szerezhetők.',
