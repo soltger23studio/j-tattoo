@@ -23,6 +23,9 @@ export interface PetGroup {
   label: string;
   /** A fül alatti rövid magyarázat. */
   hint: string;
+  /** A fül színe, ugyanabból a forrás-palettából, amit a kártyák használnak.
+   *  A négy NPC-fül a bolti türkizt kapja, mert mind bolti vásárlás. */
+  color: string;
   matches: (pet: Pet) => boolean;
 }
 
@@ -32,42 +35,49 @@ const soldBy = (pet: Pet, npc: string) =>
 export const GROUPS: PetGroup[] = [
   {
     id: 'vegyeskereskedo',
+    color: 'var(--source-shop)',
     label: 'Vegyeskereskedő',
     hint: 'A Vegyeskereskedő Eladónőnél megvásárolható petek.',
     matches: (pet) => soldBy(pet, 'Vegyeskereskedő Eladónő'),
   },
   {
     id: 'theowahdan',
+    color: 'var(--source-shop)',
     label: 'Theowahdan',
     hint: 'A Theowahdan NPC-nél megvásárolható petek – jellemzően fejlesztéssel.',
     matches: (pet) => soldBy(pet, 'Theowahdan'),
   },
   {
     id: 'alkimista',
+    color: 'var(--source-shop)',
     label: 'Alkimista',
     hint: 'Az Alkimista NPC-nél megvásárolható petek.',
     matches: (pet) => soldBy(pet, 'Alkimista'),
   },
   {
     id: 'biologus',
+    color: 'var(--source-shop)',
     label: 'Biológus',
     hint: 'A Chaegirab biológusnál megvásárolható petek.',
     matches: (pet) => soldBy(pet, 'Chaegirab biológus'),
   },
   {
     id: 'event',
+    color: 'var(--source-event)',
     label: 'Esemény',
     hint: 'Eseményhez kötött petek: event-NPC-nél vagy event-ládából szerezhetők.',
     matches: (pet) => pet.sources.includes('event'),
   },
   {
     id: 'kazamata',
+    color: 'var(--source-dungeon)',
     label: 'Kazamata',
     hint: 'Kazamatában, jellemzően a végső bossból szerezhető petek.',
     matches: (pet) => pet.sources.includes('dungeon'),
   },
   {
     id: 'egyeb',
+    color: 'var(--source-unknown)',
     label: 'Egyéb',
     hint:
       'Ami egyik fenti csoportba sem fért: más NPC-k kínálata, kazamatán ' +

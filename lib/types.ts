@@ -58,6 +58,41 @@ export const SOURCE_LABELS: Record<PetSource, string> = {
   other: 'Egyéb',
 };
 
+/**
+ * Melyik forrás adja a pet színét, ha többől is megszerezhető. 40 petnek van
+ * egynél több forrása, ezért kell sorrend: a ritkább, "elmenni érte" jellegű
+ * források előre, a bolti a végére – így a rácsban a bossok és a kazamaták
+ * kiugranak, nem vesznek el a sok bolti pet között.
+ */
+export const SOURCE_PRIORITY: PetSource[] = [
+  'boss',
+  'dungeon',
+  'event',
+  'drop',
+  'shop',
+  'quest',
+  'craft',
+  'trade',
+  'donate',
+  'other',
+];
+
+/** A pet színét adó forrás, vagy null, ha egyáltalán nincs megszerzési adat. */
+export function primarySource(pet: { sources: PetSource[] }): PetSource | null {
+  return (
+    SOURCE_PRIORITY.find((source) => pet.sources.includes(source)) ??
+    pet.sources[0] ??
+    null
+  );
+}
+
+/** A forráshoz tartozó CSS-változó, saját szín híján a tompa alapértelmezés. */
+export function sourceColor(source: PetSource | null): string {
+  return source
+    ? `var(--source-${source}, var(--source-unknown))`
+    : 'var(--source-unknown)';
+}
+
 export const RARITY_LABELS: Record<PetRarity, string> = {
   common: 'Gyakori',
   rare: 'Ritka',

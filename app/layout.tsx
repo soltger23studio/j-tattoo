@@ -1,5 +1,14 @@
 import type { Metadata } from 'next';
+import { Inter } from 'next/font/google';
 import './globals.css';
+
+/** A --font-sans eddig Intert kért, de sehol nem töltöttük be, így az oldal
+ *  rendszerbetűvel futott. Itt kapja meg ténylegesen. */
+const inter = Inter({
+  subsets: ['latin', 'latin-ext'],
+  display: 'swap',
+  variable: '--font-inter',
+});
 
 export const metadata: Metadata = {
   title: {
@@ -24,7 +33,7 @@ export default function RootLayout({
   children: React.ReactNode;
 }) {
   return (
-    <html lang="hu">
+    <html lang="hu" className={inter.variable}>
       <body>{children}</body>
     </html>
   );

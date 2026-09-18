@@ -170,6 +170,7 @@ export default function PetTracker({ pets }: PetTrackerProps) {
               className={`${styles.tab} ${
                 group === entry.id ? styles.tabActive : ''
               }`}
+              style={{ '--tab-color': entry.color } as React.CSSProperties}
               aria-pressed={group === entry.id}
               onClick={() => setGroup(entry.id)}
             >

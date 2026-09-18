@@ -1,6 +1,11 @@
 import Image from 'next/image';
 import type { Pet } from '@/lib/types';
-import { RARITY_LABELS, SOURCE_LABELS } from '@/lib/types';
+import {
+  RARITY_LABELS,
+  SOURCE_LABELS,
+  primarySource,
+  sourceColor,
+} from '@/lib/types';
 import styles from './PetCard.module.css';
 
 interface PetCardProps {
@@ -22,15 +27,20 @@ export default function PetCard({
   return (
     <article
       className={`${styles.card} ${owned ? styles.owned : ''}`}
-      style={{ '--rarity-color': `var(--rarity-${pet.rarity})` } as React.CSSProperties}
+      style={
+        {
+          '--rarity-color': `var(--rarity-${pet.rarity})`,
+          '--source-color': sourceColor(primarySource(pet)),
+        } as React.CSSProperties
+      }
     >
       <div className={styles.header}>
         {pet.image ? (
           <Image
             src={pet.image}
             alt={`${pet.name} pet képe`}
-            width={48}
-            height={48}
+            width={64}
+            height={64}
             className={styles.thumb}
           />
         ) : (
@@ -64,7 +74,13 @@ export default function PetCard({
       <div className={styles.badges}>
         {pet.sources.length > 0 ? (
           pet.sources.map((source) => (
-            <span key={source} className={styles.badge}>
+            <span
+              key={source}
+              className={styles.badge}
+              style={
+                { '--source-color': sourceColor(source) } as React.CSSProperties
+              }
+            >
               {SOURCE_LABELS[source]}
             </span>
           ))

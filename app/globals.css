@@ -22,13 +22,25 @@
   --rarity-epic: #b06ee0;
   --rarity-legendary: #e0a53f;
 
+  /* Megszerzési források. Ez adja a kártyák bal szélét és a forrás-címkéket,
+   * vagyis a rács színkódját. Szándékosan nincs köztük zöld: a zöld ebben a
+   * felületen azt jelenti, hogy "megvan", azt nem keverjük össze semmivel.
+   * A ritkább forrásoknak (quest, craft, trade, donate, other) nincs saját
+   * színük – azok a --source-unknown-ra esnek vissza. */
+  --source-boss: #e0614a;
+  --source-dungeon: #b06ee0;
+  --source-event: #e8933c;
+  --source-shop: #4fb3a2;
+  --source-drop: #5a9fe0;
+  --source-unknown: #7a6f5e;
+
   --spacing-xs: 0.5rem;
   --spacing-sm: 1rem;
   --spacing-md: 1.5rem;
   --spacing-lg: 3rem;
   --spacing-xl: 5rem;
 
-  --font-sans: 'Inter', system-ui, -apple-system, 'Segoe UI', sans-serif;
+  --font-sans: var(--font-inter), system-ui, -apple-system, 'Segoe UI', sans-serif;
 
   --radius-sm: 0.375rem;
   --radius-md: 0.75rem;

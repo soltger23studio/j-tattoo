@@ -1,5 +1,5 @@
 import type { Pet } from '@/lib/types';
-import { RARITY_LABELS, SOURCE_LABELS } from '@/lib/types';
+import { RARITY_LABELS, SOURCE_LABELS, sourceColor } from '@/lib/types';
 import styles from './PetTable.module.css';
 
 interface PetTableProps {
@@ -72,7 +72,15 @@ export default function PetTable({
                   <div className={styles.badges}>
                     {pet.sources.length > 0 ? (
                       pet.sources.map((source) => (
-                        <span key={source} className={styles.badge}>
+                        <span
+                          key={source}
+                          className={`${styles.badge} ${styles.sourceBadge}`}
+                          style={
+                            {
+                              '--source-color': sourceColor(source),
+                            } as React.CSSProperties
+                          }
+                        >
                           {SOURCE_LABELS[source]}
                         </span>
                       ))

@@ -123,6 +123,14 @@
   white-space: nowrap;
 }
 
+/* A .badge alapból a semleges arany pirula – a bónuszok ezt használják.
+ * A forrás-címkék ezzel kapják meg a saját színüket. */
+.sourceBadge {
+  background: color-mix(in srgb, var(--source-color) 16%, transparent);
+  border-color: color-mix(in srgb, var(--source-color) 45%, transparent);
+  color: var(--source-color);
+}
+
 .badgeUnknown {
   background: transparent;
   border-color: var(--color-border-strong);
