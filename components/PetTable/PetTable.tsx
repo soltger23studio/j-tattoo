@@ -1,5 +1,10 @@
 import type { Pet } from '@/lib/types';
-import { RARITY_LABELS, SOURCE_LABELS, sourceColor } from '@/lib/types';
+import {
+  RARITY_LABELS,
+  SOURCE_LABELS,
+  acquisitionText,
+  sourceColor,
+} from '@/lib/types';
 import styles from './PetTable.module.css';
 
 interface PetTableProps {
@@ -7,6 +12,9 @@ interface PetTableProps {
   owned: Set<string>;
   onToggle: (id: string) => void;
   disabled: boolean;
+  /** Csak akkor van oszlopuk, ha az adatban van belőlük többféle. */
+  showRarity: boolean;
+  showCategory: boolean;
 }
 
 /** Tömör nézet – nagy (több százas) pet-listához kényelmesebb, mint a kártyák. */
@@ -15,6 +23,8 @@ export default function PetTable({
   owned,
   onToggle,
   disabled,
+  showRarity,
+  showCategory,
 }: PetTableProps) {
   return (
     <div className={styles.wrapper}>
@@ -25,8 +35,8 @@ export default function PetTable({
               <span className="sr-only">Megvan</span>
             </th>
             <th>Név</th>
-            <th className={styles.hideOnMobile}>Ritkaság</th>
-            <th className={styles.hideOnMobile}>Kategória</th>
+            {showRarity && <th className={styles.hideOnMobile}>Ritkaság</th>}
+            {showCategory && <th className={styles.hideOnMobile}>Kategória</th>}
             <th>Megszerzés</th>
             <th className={styles.hideOnMobile}>Hogyan</th>
             <th className={styles.hideOnMobile}>Bónuszok</th>
@@ -57,17 +67,21 @@ export default function PetTable({
                     {pet.name}
                   </label>
                 </td>
-                <td
-                  className={`${styles.rarity} ${styles.hideOnMobile}`}
-                  style={
-                    {
-                      '--rarity-color': `var(--rarity-${pet.rarity})`,
-                    } as React.CSSProperties
-                  }
-                >
-                  {RARITY_LABELS[pet.rarity]}
-                </td>
-                <td className={styles.hideOnMobile}>{pet.category}</td>
+                {showRarity && (
+                  <td
+                    className={`${styles.rarity} ${styles.hideOnMobile}`}
+                    style={
+                      {
+                        '--rarity-color': `var(--rarity-${pet.rarity})`,
+                      } as React.CSSProperties
+                    }
+                  >
+                    {RARITY_LABELS[pet.rarity]}
+                  </td>
+                )}
+                {showCategory && (
+                  <td className={styles.hideOnMobile}>{pet.category}</td>
+                )}
                 <td>
                   <div className={styles.badges}>
                     {pet.sources.length > 0 ? (
@@ -94,7 +108,7 @@ export default function PetTable({
                   </div>
                 </td>
                 <td className={`${styles.how} ${styles.hideOnMobile}`}>
-                  {pet.howToGet || (
+                  {acquisitionText(pet) || (
                     <span className={styles.missing}>nincs adat</span>
                   )}
                 </td>

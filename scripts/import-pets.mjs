@@ -200,6 +200,7 @@ const LINK_KEYS = ['wikiurl', 'wiki_url', 'url', 'link', 'href'];
 const BONUS_KEYS = ['bonuses', 'bonus', 'applies', 'affects', 'bonuszok'];
 const SOURCE_KEYS = ['sources', 'source', 'forrasok'];
 const HOWTO_KEYS = ['howtoget', 'how_to_get', 'howto', 'megszerzes'];
+const STEP_KEYS = ['acquisition', 'steps', 'lepesek'];
 const PLACE_KEYS = ['location', 'place', 'hely', 'map'];
 const NPC_KEYS = ['npcs', 'npc', 'vendors', 'sellers'];
 
@@ -236,6 +237,28 @@ function pickList(obj, keys) {
   return [];
 }
 
+/**
+ * Megszerzési lépések: { kind, text, costs }. Csak a szabályos alakúakat
+ * tartjuk meg, hogy egy elrontott bemenet ne csússzon be a lib/pets.ts-be.
+ */
+function pickSteps(obj) {
+  for (const key of Object.keys(obj)) {
+    if (!STEP_KEYS.includes(key.toLowerCase())) continue;
+    const value = obj[key];
+    if (!Array.isArray(value)) continue;
+    return value
+      .map((step) => ({
+        kind: String(step?.kind ?? ''),
+        text: stripTags(step?.text ?? ''),
+        costs: Array.isArray(step?.costs)
+          ? step.costs.map((cost) => stripTags(cost)).filter(Boolean)
+          : [],
+      }))
+      .filter((step) => step.text && VALID_SOURCES.includes(step.kind));
+  }
+  return [];
+}
+
 /** Megszerzési címkék, az ismeretlen értékeket eldobva. */
 function pickSources(obj) {
   return pickList(obj, SOURCE_KEYS).filter((source) => VALID_SOURCES.includes(source));
@@ -265,6 +288,7 @@ function normalizeJsonItem(raw, baseUrl) {
     bonuses: pickList(raw, BONUS_KEYS),
     sources: pickSources(raw),
     howToGet: stripTags(pick(raw, HOWTO_KEYS) ?? ''),
+    acquisition: pickSteps(raw),
     location: stripTags(pick(raw, PLACE_KEYS) ?? ''),
     npcs: pickList(raw, NPC_KEYS),
   };
@@ -448,6 +472,16 @@ function renderPet(pet) {
     `    rarity: ${quote(pet.rarity)},`,
     `    sources: [${pet.sources.map(quote).join(', ')}],`,
   ];
+  if (pet.acquisition.length > 0) {
+    const steps = pet.acquisition.map((step) => {
+      const parts = [`kind: ${quote(step.kind)}`, `text: ${quote(step.text)}`];
+      if (step.costs.length > 0) {
+        parts.push(`costs: [${step.costs.map(quote).join(', ')}]`);
+      }
+      return `      { ${parts.join(', ')} },`;
+    });
+    lines.push(`    acquisition: [\n${steps.join('\n')}\n    ],`);
+  }
   if (pet.howToGet) lines.push(`    howToGet: ${quote(pet.howToGet)},`);
   if (pet.location) lines.push(`    location: ${quote(pet.location)},`);
   if (pet.npcs.length > 0) {
@@ -542,6 +576,7 @@ async function main() {
       rarity: opts.rarity,
       sources: item.sources ?? [],
       howToGet: item.howToGet || null,
+      acquisition: item.acquisition ?? [],
       location: item.location || null,
       npcs: item.npcs ?? [],
       bonuses: item.bonuses ?? [],

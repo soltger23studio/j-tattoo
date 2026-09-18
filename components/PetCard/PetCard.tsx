@@ -14,6 +14,9 @@ interface PetCardProps {
   onToggle: (id: string) => void;
   /** Amíg a böngésző tárolóját nem olvastuk ki, a checkbox letiltva. */
   disabled: boolean;
+  /** Csak akkor írjuk ki, ha az adatban van belőle többféle. */
+  showRarity: boolean;
+  showCategory: boolean;
 }
 
 export default function PetCard({
@@ -21,6 +24,8 @@ export default function PetCard({
   owned,
   onToggle,
   disabled,
+  showRarity,
+  showCategory,
 }: PetCardProps) {
   const checkboxId = `pet-${pet.id}`;
 
@@ -53,11 +58,17 @@ export default function PetCard({
           <label className={styles.name} htmlFor={checkboxId}>
             {pet.name}
           </label>
-          <div className={styles.meta}>
-            <span className={styles.rarity}>{RARITY_LABELS[pet.rarity]}</span>
-            <span aria-hidden="true">·</span>
-            <span>{pet.category}</span>
-          </div>
+          {(showRarity || showCategory) && (
+            <div className={styles.meta}>
+              {showRarity && (
+                <span className={styles.rarity}>
+                  {RARITY_LABELS[pet.rarity]}
+                </span>
+              )}
+              {showRarity && showCategory && <span aria-hidden="true">·</span>}
+              {showCategory && <span>{pet.category}</span>}
+            </div>
+          )}
         </div>
 
         <input
@@ -93,6 +104,29 @@ export default function PetCard({
 
       {pet.howToGet ? (
         <p className={styles.how}>{pet.howToGet}</p>
+      ) : (pet.acquisition ?? []).length > 0 ? (
+        <ul className={styles.steps}>
+          {(pet.acquisition ?? []).map((step) => (
+            <li
+              key={`${step.kind}-${step.text}`}
+              className={styles.step}
+              style={
+                { '--source-color': sourceColor(step.kind) } as React.CSSProperties
+              }
+            >
+              <span className={styles.stepText}>{step.text}</span>
+              {step.costs && step.costs.length > 0 && (
+                <span className={styles.costs}>
+                  {step.costs.map((cost) => (
+                    <span key={cost} className={styles.cost}>
+                      {cost}
+                    </span>
+                  ))}
+                </span>
+              )}
+            </li>
+          ))}
+        </ul>
       ) : (
         <p className={styles.missing}>
           A wiki nem árulja el, honnan szerezhető meg.

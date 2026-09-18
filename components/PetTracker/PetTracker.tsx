@@ -13,7 +13,7 @@ import ProgressPanel, {
 } from '@/components/ProgressPanel/ProgressPanel';
 import { GROUPS, groupOf } from '@/lib/groups';
 import type { Pet } from '@/lib/types';
-import { RARITY_ORDER, isIncomplete } from '@/lib/types';
+import { RARITY_ORDER, acquisitionText, isIncomplete } from '@/lib/types';
 import { useCollection } from '@/lib/useCollection';
 import styles from './PetTracker.module.css';
 
@@ -30,7 +30,7 @@ function searchableText(pet: Pet): string {
     [
       pet.name,
       pet.category,
-      pet.howToGet ?? '',
+      acquisitionText(pet),
       pet.location ?? '',
       pet.notes ?? '',
       ...(pet.bonuses ?? []),
@@ -55,6 +55,18 @@ export default function PetTracker({ pets }: PetTrackerProps) {
     for (const pet of pets) index.set(pet.id, searchableText(pet));
     return index;
   }, [pets]);
+
+  /** A ritkaság és a kategória csak akkor jelenik meg, ha van bennük
+   *  változatosság. A wiki egyiket sem adja, ezért ma minden pet
+   *  "Gyakori / Pet kosztüm" – ezt minden kártyán kiírni tiszta zaj. Ha
+   *  kézzel kitöltöd a rarity mezőt, maguktól visszajönnek. */
+  const { showRarity, showCategory } = useMemo(
+    () => ({
+      showRarity: new Set(pets.map((pet) => pet.rarity)).size > 1,
+      showCategory: new Set(pets.map((pet) => pet.category)).size > 1,
+    }),
+    [pets],
+  );
 
   /** Melyik pet melyik fülre tartozik, és melyik fülön hány pet van. */
   const { groupById, groupCounts } = useMemo(() => {
@@ -146,11 +158,13 @@ export default function PetTracker({ pets }: PetTrackerProps) {
           breakdown={breakdown}
           loaded={loaded}
         />
-        <CollectionTools
-          ownedIds={ownedIds}
-          onImport={handleImport}
-          onReset={reset}
-        />
+        <div className={styles.tools}>
+          <CollectionTools
+            ownedIds={ownedIds}
+            onImport={handleImport}
+            onReset={reset}
+          />
+        </div>
       </div>
 
       <nav className={styles.tabs} aria-label="Megszerzési hely">
@@ -249,6 +263,8 @@ export default function PetTracker({ pets }: PetTrackerProps) {
           owned={owned}
           onToggle={toggle}
           disabled={!loaded}
+          showRarity={showRarity}
+          showCategory={showCategory}
         />
       ) : (
         <ul className={styles.grid}>
@@ -259,6 +275,8 @@ export default function PetTracker({ pets }: PetTrackerProps) {
                 owned={owned.has(pet.id)}
                 onToggle={toggle}
                 disabled={!loaded}
+                showRarity={showRarity}
+                showCategory={showCategory}
               />
             </li>
           ))}

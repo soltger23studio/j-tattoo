@@ -108,3 +108,26 @@
 .complete .miniFill {
   background: var(--color-owned);
 }
+
+/* Telefonon a hét kategória egymás alatt egy teljes képernyőt elfoglalt,
+ * mielőtt a fülekhez vagy a kereséshez értél volna. Két oszlopban és
+ * tömörebb sorokkal ez a felére csökken. */
+@media (max-width: 520px) {
+  .breakdown {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 0.4rem;
+  }
+
+  .row {
+    padding: 0.4rem 0.5rem;
+    gap: 0.25rem;
+  }
+
+  .rowTop {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 0.05rem;
+    font-size: 0.75rem;
+    line-height: 1.3;
+  }
+}

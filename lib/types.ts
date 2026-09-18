@@ -11,6 +11,16 @@ export type PetSource =
   | 'donate'
   | 'other';
 
+/** Egy megszerzési lépés: egy mondat, a hozzá tartozó forrás-típussal. */
+export interface AcquisitionStep {
+  /** Ettől kapja a lépés a színét. */
+  kind: PetSource;
+  /** Mondat záró pont NÉLKÜL, hogy a költség hozzáfűzhető legyen. */
+  text: string;
+  /** Bolti ár tételekre bontva, hogy külön pirulaként lehessen kirakni. */
+  costs?: string[];
+}
+
 /** Ritkasági szintek – a kártyák színezését is ez adja. */
 export type PetRarity = 'common' | 'rare' | 'epic' | 'legendary';
 
@@ -25,9 +35,10 @@ export interface Pet {
   /** Egy petnek több megszerzési módja is lehet.
    *  Üres tömb = a wiki nem árulja el, honnan szerezhető. */
   sources: PetSource[];
-  /** Rövid, konkrét leírás: hogyan szerezhető meg.
-   *  Üresen hagyható, amíg nincs meg az infó – az oldal jelzi a hiányt,
-   *  és külön rá lehet szűrni a hiányos petekre. */
+  /** A wikiből generált megszerzési lépések. Ezt a szkript tölti ki. */
+  acquisition?: AcquisitionStep[];
+  /** Kézzel írt leírás. Ha ki van töltve, ez nyer az `acquisition` felett –
+   *  ide jöhet az a néhány pet, amiről a wiki nem árul el semmit. */
   howToGet?: string;
   /** Hol (NPC, kazamata, boss – a legbeszédesebb egy forrás). */
   location?: string;
@@ -110,4 +121,20 @@ export const RARITY_ORDER: Record<PetRarity, number> = {
 /** Egy pet akkor "hiányos", ha még nem tudjuk, honnan szerezhető meg. */
 export function isIncomplete(pet: { sources: PetSource[] }): boolean {
   return pet.sources.length === 0;
+}
+
+/**
+ * A megszerzés egyetlen folyó szövegként – a táblázat és a kereső ezt
+ * használja, ahol a pirulás bontásnak nincs helye. A kézzel írt `howToGet`
+ * mindig előbbre való a generált lépéseknél.
+ */
+export function acquisitionText(pet: Pet): string {
+  if (pet.howToGet?.trim()) return pet.howToGet.trim();
+  return (pet.acquisition ?? [])
+    .map((step) =>
+      step.costs && step.costs.length > 0
+        ? `${step.text}: ${step.costs.join(' + ')}.`
+        : `${step.text}.`,
+    )
+    .join(' ');
 }

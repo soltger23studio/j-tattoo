@@ -203,11 +203,12 @@ function readBonuses(item, labelTable, unknown) {
 const NUMBER_FORMAT = new Intl.NumberFormat('hu-HU');
 
 /**
- * Egy bolti ajánlat ára olvasható formában. A yang-árat (price_type 1)
- * csak akkor írjuk ki, ha nincs mellette tárgy-fizetőeszköz – a boltok
- * jellemzően mindkettőt kérik, és a tárgy a lényegi információ.
+ * Egy bolti ajánlat ára tételekre bontva, hogy az oldal külön pirulaként
+ * tudja kirakni. A yang-árat (price_type 1) csak akkor írjuk ki, ha nincs
+ * mellette tárgy-fizetőeszköz – a boltok jellemzően mindkettőt kérik, és a
+ * tárgy a lényegi információ.
  */
-function formatPrices(offer, itemNames) {
+function readPrices(offer, itemNames) {
   const prices = offer.prices ?? [];
   const items = prices
     .filter((price) => price.price_type === 3 && price.price_vnum)
@@ -215,10 +216,10 @@ function formatPrices(offer, itemNames) {
       const name = itemNames.get(price.price_vnum) ?? `#${price.price_vnum}`;
       return `${NUMBER_FORMAT.format(price.amount)} db ${name}`;
     });
-  if (items.length > 0) return items.join(' + ');
+  if (items.length > 0) return items;
 
   const gold = prices.find((price) => price.price_type === 1 && price.amount > 0);
-  return gold ? `${NUMBER_FORMAT.format(gold.amount)} yang` : null;
+  return gold ? [`${NUMBER_FORMAT.format(gold.amount)} yang`] : [];
 }
 
 /** vnum -> [{ npc, tab, price }] az összes NPC-bolt kínálatából. */
@@ -228,10 +229,15 @@ function indexShops(shops, petVnums, itemNames) {
     for (const offer of shop.offers ?? []) {
       const vnum = offer.item_vnum;
       if (!petVnums.has(vnum)) continue;
-      const entry = { npc: shop.npc_name, tab: shop.name, price: formatPrices(offer, itemNames) };
+      const entry = {
+        npc: shop.npc_name,
+        tab: shop.name,
+        costs: readPrices(offer, itemNames),
+      };
       const list = index.get(vnum) ?? [];
+      const same = (a, b) => a.join('|') === b.join('|');
       // Ugyanaz az NPC több fülön is árulhatja – egyszer elég.
-      if (!list.some((other) => other.npc === entry.npc && other.price === entry.price)) {
+      if (!list.some((other) => other.npc === entry.npc && same(other.costs, entry.costs))) {
         list.push(entry);
       }
       index.set(vnum, list);
@@ -314,55 +320,53 @@ async function indexDrops(pets, locale, mobRanks) {
 }
 
 /**
- * A három forrásból összerakja a `sources` címkéket, a `howToGet` mondatot és
- * a `location` mezőt. A `sources` a lib/types.ts PetSource értékeit használja.
+ * A három forrásból összerakja a megszerzési lépéseket. Minden lépés egy
+ * mondat (záró pont nélkül) és a hozzá tartozó forrás-típus; a bolti
+ * lépéshez az ár tételekre bontva is megvan, hogy az oldal pirulaként
+ * tudja kirakni. A `kind` a lib/types.ts PetSource értékeit használja.
  */
 function buildAcquisition({ shop, drops, articles }) {
-  const sources = new Set();
-  const sentences = [];
+  const steps = [];
   let location = null;
 
   for (const entry of drops ?? []) {
     if (entry.kind === 'boss') {
-      sources.add('boss');
-      sentences.push(`Esik a(z) ${entry.name} nevű bossból.`);
+      steps.push({ kind: 'boss', text: `Esik a(z) ${entry.name} nevű bossból` });
       location ??= entry.name;
     } else if (entry.kind === 'mob') {
-      sources.add('drop');
-      sentences.push(`Esik a(z) ${entry.name} nevű szörnyből.`);
+      steps.push({ kind: 'drop', text: `Esik a(z) ${entry.name} nevű szörnyből` });
       location ??= entry.name;
     } else {
-      sources.add('drop');
-      sentences.push(`Kinyerhető ebből a ládából: ${entry.name}.`);
+      steps.push({ kind: 'drop', text: `Kinyerhető ebből a ládából: ${entry.name}` });
     }
   }
 
   for (const entry of articles ?? []) {
-    sources.add(entry.kind);
-    sentences.push(
-      entry.kind === 'event'
-        ? `Elérhető ez alatt: ${entry.title}.`
-        : `Megszerezhető innen: ${entry.title}.`,
-    );
+    steps.push({
+      kind: entry.kind,
+      text:
+        entry.kind === 'event'
+          ? `Elérhető ez alatt: ${entry.title}`
+          : `Megszerezhető innen: ${entry.title}`,
+    });
     if (entry.kind === 'dungeon') location ??= entry.title;
   }
 
   for (const entry of shop ?? []) {
-    sources.add('shop');
-    sentences.push(
-      entry.price
-        ? `Megvásárolható ${entry.npc} NPC-nél: ${entry.price}.`
-        : `Megvásárolható ${entry.npc} NPC-nél.`,
-    );
+    steps.push({
+      kind: 'shop',
+      text: `Megvásárolható ${entry.npc} NPC-nél`,
+      costs: entry.costs,
+    });
     location ??= entry.npc;
   }
 
   return {
-    sources: [...sources],
-    howToGet: sentences.length > 0 ? sentences.join(' ') : null,
+    sources: [...new Set(steps.map((step) => step.kind))],
+    acquisition: steps,
     location,
     // Az oldal ez alapján csoportosít fülekre, ezért külön mezőben is
-    // megtartjuk, ne a howToGet mondatból kelljen visszafejteni.
+    // megtartjuk, ne a lépés-szövegből kelljen visszafejteni.
     npcs: (shop ?? []).map((entry) => entry.npc),
   };
 }
