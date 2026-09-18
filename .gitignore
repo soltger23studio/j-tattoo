@@ -9,3 +9,6 @@ build/
 *.tsbuildinfo
 next-env.d.ts
 npm-debug.log*
+
+# a fetch-szkript köztes kimenete – bármikor újragenerálható
+wiki-pets.json

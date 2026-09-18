@@ -11,8 +11,8 @@ import PetTable from '@/components/PetTable/PetTable';
 import ProgressPanel, {
   type BreakdownEntry,
 } from '@/components/ProgressPanel/ProgressPanel';
-import type { Pet, PetRarity, PetSource } from '@/lib/types';
-import { RARITY_ORDER, isIncomplete } from '@/lib/types';
+import type { Pet, PetRarity } from '@/lib/types';
+import { RARITY_ORDER } from '@/lib/types';
 import { useCollection } from '@/lib/useCollection';
 import styles from './PetTracker.module.css';
 
@@ -29,8 +29,6 @@ function searchableText(pet: Pet): string {
     [
       pet.name,
       pet.category,
-      pet.howToGet ?? '',
-      pet.location ?? '',
       pet.notes ?? '',
       ...(pet.bonuses ?? []),
     ].join(' '),
@@ -47,23 +45,20 @@ export default function PetTracker({ pets }: PetTrackerProps) {
   const [view, setView] = useState<'cards' | 'list'>('cards');
 
   /** A szűrő legördülőit magából az adatból építjük, hogy új kategória
-   *  vagy forrás hozzáadásakor ne kelljen itt is módosítani. */
-  const { categories, sources, rarities, searchIndex } = useMemo(() => {
+   *  hozzáadásakor ne kelljen itt is módosítani. */
+  const { categories, rarities, searchIndex } = useMemo(() => {
     const categorySet = new Set<string>();
-    const sourceSet = new Set<PetSource>();
     const raritySet = new Set<PetRarity>();
     const index = new Map<string, string>();
 
     for (const pet of pets) {
       categorySet.add(pet.category);
-      pet.sources.forEach((source) => sourceSet.add(source));
       raritySet.add(pet.rarity);
       index.set(pet.id, searchableText(pet));
     }
 
     return {
       categories: [...categorySet].sort((a, b) => a.localeCompare(b, 'hu')),
-      sources: [...sourceSet].sort(),
       rarities: [...raritySet].sort(
         (a, b) => RARITY_ORDER[a] - RARITY_ORDER[b],
       ),
@@ -80,16 +75,12 @@ export default function PetTracker({ pets }: PetTrackerProps) {
       }
       if (filters.status === 'owned' && !owned.has(pet.id)) return false;
       if (filters.status === 'missing' && owned.has(pet.id)) return false;
-      if (filters.source !== 'all' && !pet.sources.includes(filters.source)) {
-        return false;
-      }
       if (filters.rarity !== 'all' && pet.rarity !== filters.rarity) {
         return false;
       }
       if (filters.category !== 'all' && pet.category !== filters.category) {
         return false;
       }
-      if (filters.onlyIncomplete && !isIncomplete(pet)) return false;
       return true;
     });
 
@@ -119,11 +110,6 @@ export default function PetTracker({ pets }: PetTrackerProps) {
       .map(([label, value]) => ({ label, ...value }))
       .sort((a, b) => a.label.localeCompare(b.label, 'hu'));
   }, [pets, owned]);
-
-  const incompleteCount = useMemo(
-    () => pets.filter(isIncomplete).length,
-    [pets],
-  );
 
   /** Csak a valóban létező petek pipáit tartjuk meg – ha egy pet kikerül
    *  az adatokból, ne lógjon bent a régi id a mentésben. */
@@ -162,11 +148,9 @@ export default function PetTracker({ pets }: PetTrackerProps) {
         filters={filters}
         onChange={setFilters}
         categories={categories}
-        sources={sources}
         rarities={rarities}
         resultCount={visiblePets.length}
         totalCount={pets.length}
-        incompleteCount={incompleteCount}
       />
 
       <div className={styles.bulkRow}>

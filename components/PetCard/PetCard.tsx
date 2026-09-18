@@ -1,6 +1,6 @@
 import Image from 'next/image';
 import type { Pet } from '@/lib/types';
-import { RARITY_LABELS, SOURCE_LABELS, isIncomplete } from '@/lib/types';
+import { RARITY_LABELS } from '@/lib/types';
 import styles from './PetCard.module.css';
 
 interface PetCardProps {
@@ -18,7 +18,6 @@ export default function PetCard({
   disabled,
 }: PetCardProps) {
   const checkboxId = `pet-${pet.id}`;
-  const incomplete = isIncomplete(pet);
 
   return (
     <article
@@ -62,40 +61,14 @@ export default function PetCard({
         />
       </div>
 
-      <div className={styles.badges}>
-        {pet.sources.length > 0 ? (
-          pet.sources.map((source) => (
-            <span key={source} className={styles.badge}>
-              {SOURCE_LABELS[source]}
-            </span>
-          ))
-        ) : (
-          <span className={`${styles.badge} ${styles.badgeUnknown}`}>
-            Megszerzés ismeretlen
-          </span>
-        )}
-      </div>
-
-      {pet.howToGet ? (
-        <p className={styles.how}>{pet.howToGet}</p>
-      ) : (
-        <p className={styles.missing}>
-          Még nincs kitöltve, hogyan lehet megszerezni.
-        </p>
-      )}
-
-      {pet.location && (
-        <p className={styles.detail}>
-          <strong>Hol:</strong> {pet.location}
-        </p>
-      )}
-
-      {pet.bonuses && pet.bonuses.length > 0 && (
+      {pet.bonuses && pet.bonuses.length > 0 ? (
         <ul className={styles.bonuses}>
           {pet.bonuses.map((bonus) => (
             <li key={bonus}>{bonus}</li>
           ))}
         </ul>
+      ) : (
+        <p className={styles.missing}>Ehhez a pethez nincs bónusz megadva.</p>
       )}
 
       {pet.notes && <p className={styles.notes}>{pet.notes}</p>}

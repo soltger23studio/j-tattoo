@@ -9,14 +9,15 @@
  *
  * Használat:
  *
- *   # közvetlenül a wikiről (ehhez el kell érned a wikit a gépedről)
- *   node scripts/import-pets.mjs "https://wiki.venor2.hu/items?type=ITEM_COSTUME&subtype=COSTUME_PET"
+ *   # a szokásos út: előbb a fetch-szkript szedi le az adatot a wiki API-jából
+ *   node scripts/fetch-wiki-pets.mjs
+ *   node scripts/import-pets.mjs ./wiki-pets.json
  *
  *   # egy lementett oldalból (Ctrl+S, vagy DevTools -> Copy outerHTML)
  *   node scripts/import-pets.mjs ./wiki.html
  *
- *   # ha a wikinek van JSON API-ja, abból is megy
- *   node scripts/import-pets.mjs ./pets.json
+ *   # közvetlenül egy lista-oldalról (a wiki listája JS-sel tölt, így NEM megy)
+ *   node scripts/import-pets.mjs "https://pelda.hu/petek"
  *
  * Kapcsolók:
  *   --dry-run          nem ír fájlt, csak kilistázza, mit talált
@@ -26,9 +27,9 @@
  *   --pages 5          hány lapot kérjen le (alap: addig megy, amíg új pet jön)
  *   --out lib/pets.ts  kimeneti fájl
  *
- * FONTOS: a `sources` szándékosan üresen marad minden petnél. A wikin nincs
- * megszerzési infó, azt utólag, kézzel kell kitölteni a lib/pets.ts-ben.
- * Az oldal az ilyen peteket pirossal jelzi, és külön rá lehet szűrni.
+ * A `bonuses` mezőt a bemenetből veszi át (a fetch-szkript tölti ki a wiki
+ * apply-adataiból). A `rarity` a wikiben nincs benne, ezért minden petnél a
+ * --rarity alapérték kerül be.
  *
  * Az `id` mezőt a szkript a meglévő lib/pets.ts-ből veszi át, ha a pet neve
  * változatlan – így egy újbóli import nem törli le a látogatók pipáit.
@@ -195,6 +196,8 @@ const NAME_KEYS = ['name', 'item_name', 'itemname', 'localizedname', 'displaynam
 const VNUM_KEYS = ['vnum', 'item_vnum', 'itemvnum', 'id', 'item_id', 'itemid'];
 const IMAGE_KEYS = ['image', 'img', 'icon', 'iconurl', 'icon_url', 'image_url', 'imageurl', 'thumbnail', 'icon_path', 'iconpath'];
 const DESC_KEYS = ['description', 'desc', 'info', 'tooltip', 'text', 'leiras', 'leírás'];
+const LINK_KEYS = ['wikiurl', 'wiki_url', 'url', 'link', 'href'];
+const BONUS_KEYS = ['bonuses', 'bonus', 'applies', 'affects', 'bonuszok'];
 
 function pick(obj, keys) {
   for (const key of Object.keys(obj)) {
@@ -209,6 +212,19 @@ function pick(obj, keys) {
 
 const looksLikeItem = (value) =>
   value && typeof value === 'object' && !Array.isArray(value) && pick(value, NAME_KEYS);
+
+/** Bónusz-lista: csak a nem üres szövegeket tartjuk meg, sorrendben. */
+function pickBonuses(obj) {
+  for (const key of Object.keys(obj)) {
+    if (!BONUS_KEYS.includes(key.toLowerCase())) continue;
+    const value = obj[key];
+    if (!Array.isArray(value)) continue;
+    return value
+      .map((entry) => stripTags(typeof entry === 'string' ? entry : (entry?.label ?? '')))
+      .filter(Boolean);
+  }
+  return [];
+}
 
 /** Megkeresi a JSON-ban a legnagyobb olyan tömböt, ami item-szerű objektumokból áll. */
 function findItemArray(node, best = { items: [] }) {
@@ -230,7 +246,8 @@ function normalizeJsonItem(raw, baseUrl) {
     vnum: pick(raw, VNUM_KEYS),
     image: absoluteUrl(pick(raw, IMAGE_KEYS), baseUrl),
     description: stripTags(pick(raw, DESC_KEYS) ?? ''),
-    wikiUrl: null,
+    wikiUrl: absoluteUrl(pick(raw, LINK_KEYS), baseUrl),
+    bonuses: pickBonuses(raw),
   };
 }
 
@@ -370,9 +387,26 @@ const EXT_BY_TYPE = {
   'image/svg+xml': '.svg',
 };
 
+/** A wiki kapcsolata időnként megszakad, ezért néhányszor újrapróbáljuk. */
+async function fetchImage(url, attempts = 5) {
+  let lastError;
+  for (let attempt = 1; attempt <= attempts; attempt += 1) {
+    try {
+      const res = await fetch(url, { headers: { 'user-agent': USER_AGENT } });
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      return res;
+    } catch (err) {
+      lastError = err;
+      if (attempt < attempts) {
+        await new Promise((resolve) => setTimeout(resolve, 500 * 2 ** (attempt - 1)));
+      }
+    }
+  }
+  throw lastError;
+}
+
 async function downloadImage(url, id) {
-  const res = await fetch(url, { headers: { 'user-agent': USER_AGENT } });
-  if (!res.ok) throw new Error(`HTTP ${res.status}`);
+  const res = await fetchImage(url);
 
   const type = (res.headers.get('content-type') ?? '').split(';')[0].trim().toLowerCase();
   const fromUrl = (new URL(url).pathname.match(/\.(png|jpe?g|gif|webp|svg)$/i) ?? [])[0];
@@ -393,8 +427,10 @@ function renderPet(pet) {
     `    name: ${quote(pet.name)},`,
     `    category: ${quote(pet.category)},`,
     `    rarity: ${quote(pet.rarity)},`,
-    '    sources: [],',
   ];
+  if (pet.bonuses.length > 0) {
+    lines.push(`    bonuses: [${pet.bonuses.map(quote).join(', ')}],`);
+  }
   if (pet.image) lines.push(`    image: ${quote(pet.image)},`);
   if (pet.wikiUrl) lines.push(`    wikiUrl: ${quote(pet.wikiUrl)},`);
   if (pet.notes) lines.push(`    notes: ${quote(pet.notes)},`);
@@ -412,19 +448,14 @@ function renderPetsFile(pets, sourceLabel) {
  * Ezt a fájlt a scripts/import-pets.mjs generálta a szerver wikijéről:
  * ${sourceLabel}
  *
- * Kézzel is nyugodtan szerkeszthető. A wikin nincs megszerzési infó, ezért
- * minden petnél üres a \`sources\` – az oldal ezeket pirossal jelzi, és külön
- * rá lehet szűrni. Ahogy kiderül, honnan szerezhető meg egy pet, told ki a
- * \`sources\` tömböt és írd meg a \`howToGet\` mezőt:
+ * Kézzel is nyugodtan szerkeszthető, de egy újabb import felülírja – tartós
+ * változtatáshoz inkább a wikit vagy a szkriptet igazítsd.
  *
- *   sources: ['boss', 'trade'],
- *   howToGet: 'Az Árnyék Alfa bossból esik, cserélhető.',
- *   location: 'Sötét Erdő',
- *   bonuses: ['+6% támadóerő'],
+ * A \`bonuses\` a játék nyers apply-mezőiből jön, a wiki magyar feliratával
+ * (pl. "Szörnyek elleni erő +3%"). A \`rarity\` a wikiben nincs benne, ezért
+ * minden petnél az importálás alapértéke áll – ha akarod, kézzel állítsd:
  *
- * rarity  = 'common' | 'rare' | 'epic' | 'legendary'
- * sources = 'event' | 'shop' | 'drop' | 'boss' | 'dungeon'
- *         | 'quest' | 'craft' | 'trade' | 'donate' | 'other'
+ *   rarity = 'common' | 'rare' | 'epic' | 'legendary'
  *
  * FONTOS: az \`id\` mezőt utólag NE írd át! A látogatók pipái ez alapján
  * vannak elmentve, egy átnevezett id-nél elveszik a jelölés. Az importáló
@@ -484,6 +515,7 @@ async function main() {
       name: item.name,
       category: opts.category,
       rarity: opts.rarity,
+      bonuses: item.bonuses ?? [],
       image: null,
       remoteImage: item.image,
       wikiUrl: item.wikiUrl,

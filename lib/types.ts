@@ -1,16 +1,3 @@
-/** Honnan lehet megszerezni egy petet. */
-export type PetSource =
-  | 'event'
-  | 'shop'
-  | 'drop'
-  | 'boss'
-  | 'dungeon'
-  | 'quest'
-  | 'craft'
-  | 'trade'
-  | 'donate'
-  | 'other';
-
 /** Ritkasági szintek – a kártyák színezését is ez adja. */
 export type PetRarity = 'common' | 'rare' | 'epic' | 'legendary';
 
@@ -22,16 +9,8 @@ export interface Pet {
   /** Kategória (pl. "Harci pet", "Dísz pet"). Szabadon bővíthető. */
   category: string;
   rarity: PetRarity;
-  /** Egy petnek több megszerzési módja is lehet.
-   *  Üres tömb = még nem tudjuk, honnan szerezhető. */
-  sources: PetSource[];
-  /** Rövid, konkrét leírás: hogyan szerezhető meg.
-   *  Üresen hagyható, amíg nincs meg az infó – az oldal jelzi a hiányt,
-   *  és külön rá lehet szűrni a hiányos petekre. */
-  howToGet?: string;
-  /** Hol (térkép, NPC, bolt, esemény neve). */
-  location?: string;
-  /** Milyen bónuszokat ad. */
+  /** Milyen bónuszokat ad, a wiki magyar feliratával
+   *  (pl. "Szörnyek elleni erő +3%"). */
   bonuses?: string[];
   /** Kép a public/images/pets/ mappából, pl. "/images/pets/kutyus.png". */
   image?: string;
@@ -40,19 +19,6 @@ export interface Pet {
   /** Bármilyen egyéb megjegyzés (pl. "csak karácsonykor elérhető"). */
   notes?: string;
 }
-
-export const SOURCE_LABELS: Record<PetSource, string> = {
-  event: 'Esemény',
-  shop: 'Item Shop',
-  drop: 'Drop',
-  boss: 'Boss',
-  dungeon: 'Dungeon',
-  quest: 'Küldetés',
-  craft: 'Készítés',
-  trade: 'Csere / piac',
-  donate: 'Támogatói',
-  other: 'Egyéb',
-};
 
 export const RARITY_LABELS: Record<PetRarity, string> = {
   common: 'Gyakori',
@@ -67,9 +33,3 @@ export const RARITY_ORDER: Record<PetRarity, number> = {
   rare: 2,
   common: 3,
 };
-
-
-/** Egy pet akkor "hiányos", ha még nem tudjuk, honnan szerezhető meg. */
-export function isIncomplete(pet: { sources: PetSource[]; howToGet?: string }): boolean {
-  return pet.sources.length === 0 || !pet.howToGet || pet.howToGet.trim() === '';
-}

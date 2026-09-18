@@ -123,19 +123,8 @@
   white-space: nowrap;
 }
 
-.badgeUnknown {
-  background: transparent;
-  border-color: var(--color-border-strong);
-  color: var(--color-text-muted);
-}
-
-.how {
-  color: var(--color-text-muted);
-  min-width: 18rem;
-}
-
 .missing {
-  color: var(--color-danger);
+  color: var(--color-text-muted);
   font-style: italic;
 }
 

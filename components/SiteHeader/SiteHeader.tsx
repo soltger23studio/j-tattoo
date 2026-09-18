@@ -11,8 +11,8 @@ export default function SiteHeader({ showSampleWarning }: SiteHeaderProps) {
         Pet <span className={styles.accent}>Gyűjtemény</span>
       </h1>
       <p className={styles.subtitle}>
-        Minden pet egy helyen, rendszerezve: honnan és hogyan szerezhető meg.
-        Pipáld ki, melyik van már meg – szűrj arra, ami még hiányzik.
+        A szerver összes petje egy helyen, bónuszokkal együtt. Pipáld ki,
+        melyik van már meg – szűrj arra, ami még hiányzik.
       </p>
       {showSampleWarning && (
         <div className={styles.banner}>
