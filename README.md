@@ -5,14 +5,20 @@ szerezhető meg**, és mindenki **kipipálhatja magának**, melyik van már meg.
 
 ## Mit tud
 
-- **Pet-lista** kártyákban: név, ritkaság, kategória, megszerzési mód(ok),
-  részletes leírás, hely, bónuszok, megjegyzések
+- **Pet-lista** kártyákban: név, kép, megszerzési mód(ok), a megszerzés
+  lépései az árakkal, hely és bónuszok
 - **Pipálás** petenként – a böngészőben tárolva, regisztráció nélkül
-- **Szűrők**: „csak ami hiányzik" / „csak ami megvan", megszerzési mód,
-  ritkaság, kategória szerint
-- **Keresés** név, megszerzési mód vagy hely szerint (ékezet nélkül is működik:
-  a „tuz" megtalálja a „Tűz Sárkány"-t)
-- **Haladásjelző**: összesített és kategóriánkénti százalék
+- **Fülek megszerzési hely szerint** (Vegyeskereskedő, Theowahdan, Alkimista,
+  Biológus, Esemény, Kazamata, Egyéb). Minden pet pontosan egy fülre kerül,
+  így a fülek számai kiadják a teljes listát – a besorolást a
+  `lib/groups.ts` írja le
+- **Színkód a forrás szerint**: boss piros, kazamata lila, esemény narancs,
+  drop kék, NPC bolt türkiz, küldetés sárga, Item Shop rózsaszín
+- **Szűrők**: „csak ami hiányzik" / „csak ami megvan", és a megszerzési infó
+  nélküli petek
+- **Keresés** név, NPC, esemény, kazamata, bónusz vagy ár-tétel szerint
+  (ékezet nélkül is működik: a „tuz" megtalálja a „Tűz Sárkány"-t)
+- **Haladásjelző**: összesített és fülenkénti százalék
 - **Tömeges pipálás**: a szűrt találatok egyszerre bejelölhetők – így egy nagy
   gyűjtemény percek alatt felvihető
 - **Két nézet**: részletes kártyák, vagy tömör lista (több száz petnél ez
@@ -34,27 +40,21 @@ Ezután nyisd meg: http://localhost:3000
 
 ## Pet-lista importálása a wikiről
 
-A teljes pet-lista legépelése helyett a `scripts/import-pets.mjs` kiszedi a
-peteket a szerver wikijéről, letölti a képeket a `public/images/pets/` mappába,
-és legenerálja a `lib/pets.ts`-t:
+**Két lépés**, mert a wiki lista-oldala kliensoldali alkalmazás: a nyers
+HTML-ben nincs egyetlen pet sem, az adat a wiki saját API-jából jön.
 
 ```bash
-node scripts/import-pets.mjs "https://wiki.venor2.hu/items?type=ITEM_COSTUME&subtype=COSTUME_PET"
+node scripts/fetch-wiki-pets.mjs              # -> wiki-pets.json
+node scripts/import-pets.mjs ./wiki-pets.json # -> lib/pets.ts + képek
 ```
 
-Ha a wiki nem érhető el arról a gépről, ahol a szkriptet futtatod, mentsd le az
-oldalt és add meg fájlként:
+Az első lépés szedi le az API-ból a neveket, ikonokat, bónuszokat és a
+megszerzési adatokat; a második ebből generálja a `lib/pets.ts`-t és tölti le
+a képeket a `public/images/pets/` mappába.
 
-```bash
-node scripts/import-pets.mjs ./wiki.html     # lementett oldal
-node scripts/import-pets.mjs ./pets.json     # a wiki JSON-válasza
-```
-
-A szkript többféle oldalszerkezetet ismer: táblázatos listát, kártyás listát,
-JSON API-választ és a HTML-be ágyazott JSON-t is. Ha a lista JavaScripttel
-töltődik be, a nyers HTML-ben nincs adat – ilyenkor a böngészőben nyisd meg az
-oldalt, majd DevTools (F12) → Elements → jobb klikk a `<html>`-en → **Copy
-outerHTML**, és azt mentsd el `wiki.html` néven.
+A `scripts/import-pets.mjs` önmagában lementett HTML-t vagy JSON-t is elfogad
+(`node scripts/import-pets.mjs ./wiki.html`), ha valaha más forrásból kellene
+dolgozni.
 
 Kapcsolók:
 
@@ -67,21 +67,49 @@ Kapcsolók:
 | `--pages 5` | hány lapot kérjen le (alapból addig megy, amíg új pet jön) |
 | `--out lib/pets.ts` | kimeneti fájl |
 
-Amit a szkript **nem** tud: a wikin nincs megszerzési infó, ezért minden
-importált petnél üres marad a `sources`, és nincs `howToGet`. Az oldal az ilyen
-peteket pirossal jelzi, és külön rá lehet szűrni – így szépen végig lehet menni
-rajtuk, és kézzel kitölteni. Ugyanígy a `category` és a `rarity` is egységes
-alapérték: ezeket utólag érdemes kézzel pontosítani.
+A `fetch-wiki-pets.mjs` kapcsolói: `--out`, `--locale hu`, és a `--no-sources`
+(kihagyja a megszerzési adatokat, így sokkal gyorsabb).
+
+Amit a szkript **megszerez**: nevet, ikont, wiki-linket, bónuszokat, és a
+megszerzési módot három forrásból (NPC-boltok, drop-táblák, event- és
+kazamata-cikkek). Jelenleg 70 petből 64-hez van megszerzési infó.
+
+Amit **nem**: a `rarity` és a `category` a wikiben nincs benne, ezért minden
+petnél az importálás alapértéke áll. A maradék néhány petnél pedig egyszerűen
+nincs adat – ezeket az oldal pirossal jelzi, és külön rá lehet szűrni.
 
 Újbóli importnál a szkript a meglévő `lib/pets.ts`-ből **átveszi a már meglévő
 `id`-ket** a pet neve alapján, hogy a látogatók pipái ne vesszenek el.
 
 ## Hogyan adj hozzá vagy módosíts peteket
 
-Minden pet-adat **egyetlen fájlban** van: `lib/pets.ts`. A kódhoz nem kell
-hozzányúlni, csak ebben a listában kell szerkeszteni.
+Két fájl van, és **fontos, hogy melyikbe írsz**:
 
-Egy pet így néz ki:
+| Fájl | Mi ez | Szerkeszthető? |
+|---|---|---|
+| `lib/pets.ts` | a wikiről **generált** lista | egy újraimportálás felülírja |
+| `lib/pet-overrides.ts` | a te **kézi** kiegészítéseid | a szkript soha nem bántja |
+
+Ha olyasmit írsz be, amit a wiki is tud (vagy tudni fog), az mehet a
+`lib/pets.ts`-be – de számolj vele, hogy a következő
+`node scripts/import-pets.mjs` felülírja.
+
+**Amit a wiki nem tud – pl. hogy egy pet Item Shopos, vagy melyik küldetés
+adja –, azt a `lib/pet-overrides.ts`-be írd.** Ott a pet `id`-je alá csak
+azokat a mezőket kell felsorolni, amiket felül akarsz írni:
+
+```ts
+'kiraly-pingvin': {
+  sources: ['quest'],
+  howToGet: 'A Jégmező küldetéssor jutalma.',
+  location: 'Jégmező – Pingvin NPC',
+},
+```
+
+A többi mező marad a generált értéken. Elgépelt `id`-re a fejlesztői
+szerver figyelmeztet a konzolon.
+
+Egy teljes pet a `lib/pets.ts`-ben így néz ki:
 
 ```ts
 {
@@ -123,14 +151,14 @@ A `sources` lehetséges értékei:
 | érték | jelentése |
 |---|---|
 | `event` | Esemény |
-| `shop` | Item Shop |
-| `drop` | Drop (szörnyekből) |
+| `shop` | NPC bolt |
+| `drop` | Drop (szörnyekből, ládákból) |
 | `boss` | Boss |
-| `dungeon` | Dungeon |
+| `dungeon` | Kazamata |
 | `quest` | Küldetés |
 | `craft` | Készítés |
 | `trade` | Csere / piac |
-| `donate` | Támogatói |
+| `donate` | Item Shop |
 | `other` | Egyéb |
 
 Egy petnek **több** forrása is lehet, pl. `sources: ['event', 'trade']`.
@@ -140,8 +168,10 @@ Egy petnek **több** forrása is lehet, pl. `sources: ['event', 'trade']`.
 > felvételéhez adj hozzá új `id`-t; egy pet törlésekor a régi jelölés magától
 > kiesik.
 
-Ha új kategóriát vagy ritkaságot használsz, a szűrő legördülői **maguktól
-frissülnek**, nem kell máshol módosítani.
+A ritkaság és a kategória csak akkor jelenik meg a kártyákon, ha van bennük
+**többféle érték**. Ma minden pet `common` / „Pet kosztüm", ezért egyik sem
+látszik; amint kitöltesz párat kézzel, maguktól visszatérnek – a kártyákra, a
+tömör lista oszlopába és a rendezésbe is.
 
 ### Képek
 
@@ -190,7 +220,8 @@ Saját domain a Vercel projekt **Settings → Domains** menüjében köthető r�
 ```
 app/            oldalak, layout, globális stílusok, favicon (icon.svg)
 components/     komponensek, mindegyik saját mappában a CSS Module-jával
-lib/pets.ts     >>> ITT VAN A PET-LISTA <<< (generált, de kézzel is írható)
+lib/pets.ts     a wikiről generált pet-lista (importáláskor felülíródik)
+lib/pet-overrides.ts  >>> IDE ÍRD A KÉZI KIEGÉSZÍTÉSEKET <<<
 lib/types.ts    adatszerkezet, feliratok, forrás-színek
 lib/groups.ts   a fülek: melyik pet melyik csoportba kerül
 public/images/pets/  pet-képek
