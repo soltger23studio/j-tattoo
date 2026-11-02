@@ -7,11 +7,11 @@ name: Wiki-figyelő
 # A lib/pet-overrides.ts-hez SOHA nem nyúl, tehát a kézzel beírt adatok
 # (Item Shop, küldetés) egy ilyen frissítést is túlélnek.
 
+# A heti automatikus futás ki van kapcsolva. Visszakapcsoláshoz tedd vissza:
+#   schedule:
+#     - cron: '0 6 * * 1'   # Minden hétfő 06:00 UTC
 on:
-  schedule:
-    # Minden hétfő 06:00 UTC
-    - cron: '0 6 * * 1'
-  # Kézzel is indítható a repo Actions fülén
+  # Csak kézzel indítható a repo Actions fülén
   workflow_dispatch:
 
 permissions:
